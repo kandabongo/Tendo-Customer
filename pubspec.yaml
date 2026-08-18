@@ -1,0 +1,157 @@
+name: fuodz
+description: A new Flutter project.
+
+# The following line prevents the package from being accidentally published to
+# pub.dev using `pub publish`. This is preferred for private packages.
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
+# In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+version: 1.8.41+97
+
+environment:
+  sdk: ^3.7.2
+
+dependencies:
+  adaptive_theme: ^3.7.2
+  animated_bottom_navigation_bar: ^1.4.0
+  app_links: ^7.2.1
+  awesome_notifications: ^0.12.1
+  basic_utils: ^5.8.2
+  cached_network_image_ce: ^4.9.0
+  carousel_slider: ^5.1.2
+  cloud_firestore: ^6.7.1
+  contained_tab_bar_view: ^0.8.0
+  country_picker: ^2.0.28
+  currency_formatter: ^2.3.0
+  custom_clippers: ^2.0.4
+  custom_sliding_segmented_control: ^1.8.5
+  dartx: ^1.2.0
+  device_info_plus: ^13.2.0
+  dio: ^5.11.0
+  dio_http_cache_lts: ^0.4.2
+  dotted_border: ^3.1.0
+  dotted_line: ^3.3.0
+  double_back_to_close: ^2.0.0
+  dynamic_height_grid_view: ^0.0.3
+  easy_refresh: ^3.5.1
+  envied: ^1.3.8
+  firebase_auth: ^6.5.6
+  firebase_core: ^4.12.1
+  firebase_crashlytics: ^5.2.6
+  firebase_messaging: ^16.4.3
+  firestore_chat: ^0.3.0
+  flag: ^7.0.2
+  flutter:
+    sdk: flutter
+  flutter_dropdown_alert: ^1.0.7
+  flutter_facebook_auth: ^7.2.0
+  flutter_form_builder: ^10.3.0+2
+  flutter_icons:
+    git:
+      url: https://github.com/ambrosethebuild/flutter_icons.git
+      ref: "9d42fa4"
+  flutter_image_compress: ^2.5.1
+  flutter_inappwebview: ^6.1.5
+  flutter_overboard: ^3.1.3
+  flutter_polyline_points: ^3.1.0
+  flutter_rating_bar: ^4.0.1
+  flutter_staggered_animations: ^1.1.1
+  flutter_svg: ^2.3.0
+  flutter_typeahead: ^6.0.0
+  geohash_plus: ^1.1.1
+  geolocator: ^14.0.3
+  glass_kit: ^4.0.2
+  google_fonts: ^8.2.0
+  google_maps_flutter: ^2.18.0
+  google_maps_place_picker_mb_v2: ^1.0.1
+  google_places_flutter: ^2.1.1
+  google_sign_in: ^7.2.0
+  group_radio_button: 1.3.0
+  hive_ce_flutter: ^2.3.4
+  hugeicons: ^1.1.7
+  image_picker: ^1.2.3
+  in_app_review: ^2.0.12
+  inspection: ^0.0.13
+  jiffy: ^6.4.5
+  laravel_echo_null: ^0.3.0
+  localize_and_translate: ^4.1.1
+  location: ^10.0.2
+  map_launcher: ^6.0.0
+  masonry_grid: ^1.0.0
+  measure_size: ^5.0.2
+  permission_handler: ^12.0.3
+  pin_code_fields: ^9.4.0
+  pinch_zoom: ^2.0.1
+  pretty_dio_logger: ^1.4.0
+  pull_to_refresh_flutter3: ^2.0.2
+  pusher_client_socket: ^0.0.8
+  qr_code_scanner_plus: ^2.2.0
+  qr_flutter: ^4.1.0
+  quickalert: ^1.1.0
+  rx_shared_preferences: ^4.0.0
+  rxdart: ^0.28.0
+  share_plus: ^13.3.0
+  shared_preferences: ^2.5.5
+  sign_in_with_apple: ^8.1.0
+  sim_card_code: ^0.2.0
+  singleton: ^0.0.3-nullsafety
+  sliding_up_panel: ^2.0.0+1
+  smooth_page_indicator: ^2.0.1
+  stacked: ^3.5.0
+  supercharged: ^2.1.1
+  timelines_plus: ^2.0.0
+  upgrader: ^13.6.0
+  url_launcher: ^6.3.2
+  uuid: ^4.6.0
+  velocity_x: ^4.3.1
+  what3words: ^3.2.0
+
+dependency_overrides:
+  flutter_widget_from_html: ^0.10.1
+  intl: ^0.19.0
+  http: ^1.5.0
+  wakelock_plus: ^1.4.0
+  package_info_plus: ^10.2.1
+  webview_flutter_android: ^4.4.2
+  flutter_inappwebview_ios:
+    git:
+      url: https://github.com/andychucs/flutter_inappwebview.git
+      ref: master
+      path: flutter_inappwebview_ios
+  custom_faqs:
+    git:
+      url: https://github.com/ambrosethebuild/custom_faqs
+      ref: v0.3.0
+
+dev_dependencies:
+  build_runner: ^2.15.1
+  envied_generator: ^1.3.8
+  flutter_application_id: ^2.1.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.7
+  flutter_test:
+    sdk: flutter
+  spider: ^4.2.2
+  translator: ^1.0.4+1
+
+flutter:
+  config:
+    enable-swift-package-manager: false
+  uses-material-design: true
+  # To add assets to your application, add an assets section, like this:
+  assets:
+    - assets/images/
+    - assets/images/anim/
+    - assets/images/icons/
+    - assets/json/
+    - assets/lang/
+    - assets/
