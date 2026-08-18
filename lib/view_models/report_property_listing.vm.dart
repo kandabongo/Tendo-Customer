@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fuodz/constants/api.dart';
 import 'package:fuodz/models/api_response.dart';
 import 'package:fuodz/models/property.dart';
-import 'package:fuodz/models/property_report_Reason.dart';
+import 'package:fuodz/models/property_report_reason.dart';
 import 'package:fuodz/services/alert.service.dart';
 import 'package:fuodz/services/http.service.dart';
 import 'package:fuodz/view_models/base.view_model.dart';

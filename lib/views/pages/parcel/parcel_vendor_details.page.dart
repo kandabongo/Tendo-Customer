@@ -9,7 +9,7 @@ import 'package:fuodz/services/app.service.dart';
 import 'package:fuodz/utils/utils.dart';
 import 'package:fuodz/view_models/parcel_vendor_details_page.vm.dart';
 import 'package:fuodz/views/pages/parcel/new_parcel.page.dart';
-import 'package:fuodz/views/pages/parcel/widgets/parcel_Vendor_areas_of_operation.dart';
+import 'package:fuodz/views/pages/parcel/widgets/parcel_vendor_areas_of_operation.dart';
 import 'package:fuodz/views/pages/vendor_details/widgets/vendor_details_header.view.dart';
 import 'package:fuodz/widgets/buttons/custom_leading.dart';
 import 'package:fuodz/widgets/cards/package_type_pricing.card.dart';

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fuodz/constants/sizes.dart';
 import 'package:fuodz/models/property.dart';
-import 'package:fuodz/models/property_report_Reason.dart';
+import 'package:fuodz/models/property_report_reason.dart';
 import 'package:fuodz/view_models/report_property_listing.vm.dart';
 import 'package:fuodz/widgets/base.page.dart';
 import 'package:fuodz/widgets/buttons/custom_button.dart';
