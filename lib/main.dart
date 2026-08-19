@@ -53,7 +53,7 @@ void main() async {
       DeepLinkService().initialize();
 
       //font
-      await GoogleFonts.pendingFonts([GoogleFonts.plusJakartaSans()]);
+      GoogleFonts.pendingFonts([GoogleFonts.plusJakartaSans()]);
       // Run app!
       runApp(LocalizedApp(child: MyApp()));
     },
@@ -62,3 +62,5 @@ void main() async {
     },
   );
 }
+
+
