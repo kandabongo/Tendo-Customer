@@ -44,9 +44,15 @@ class ServiceViewModel extends MyBaseViewModel {
       currentUser = await AuthServices.getCurrentUser(force: true);
       notifyListeners();
     }
-    //handle location stream change
+    //set up the location stream listener once (does not resubscribe on later calls)
     handleLocationStreamChange();
-    //get vendors
+    //load the actual page data
+    await loadServiceData();
+  }
+
+  //loads all the data shown on the page; safe to call repeatedly (e.g. on location change)
+  //without tearing down/recreating the location stream subscription
+  loadServiceData() async {
     await getServiceCategories();
     await getTrendingServices();
     await getFeaturedProviders();
@@ -61,10 +67,15 @@ class ServiceViewModel extends MyBaseViewModel {
   }
 
   handleLocationStreamChange() {
-    currentLocationChangeStream?.cancel();
+    //already subscribed - avoid resubscribing, since the BehaviorSubject
+    //immediately replays its last value to new subscribers, which combined
+    //with calling initialise() here again would cause an infinite loop
+    if (currentLocationChangeStream != null) {
+      return;
+    }
     currentLocationChangeStream = LocationService.currenctDeliveryAddressSubject
         .listen((data) {
-          initialise();
+          loadServiceData();
         });
   }
 
@@ -184,3 +195,4 @@ class ServiceViewModel extends MyBaseViewModel {
     NavigationService.categorySelected(category);
   }
 }
+
