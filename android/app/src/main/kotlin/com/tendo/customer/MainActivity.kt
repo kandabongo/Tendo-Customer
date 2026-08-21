@@ -1,4 +1,4 @@
-package com.twendeapp.customer
+package com.tendo.customer
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
