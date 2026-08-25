@@ -9,9 +9,11 @@
     <!-- <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/> -->
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"
                      tools:node="remove"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"
+                     tools:node="remove"/>
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
-    
+
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW" />
@@ -133,5 +135,3 @@
 
     </application>
 </manifest>
-
-
