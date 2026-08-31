@@ -11,7 +11,7 @@ plugins {
 
 // Load keystore properties
 val keystoreProperties = Properties()
-val keystorePropertiesFile = File("C:\\Users\\pc\\AndroidStudioProjects\\Tendo-Customer\\android\\key.properties")
+val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(keystorePropertiesFile.inputStream())
 }
