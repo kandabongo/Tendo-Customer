@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 // import 'package:dartx/dartx.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_http_cache_lts/dio_http_cache_lts.dart';
@@ -89,6 +89,7 @@ class HttpService {
       connectTimeout: 5.seconds,
     );
     dio = new Dio(baseOptions);
+    dio!.interceptors.add(LogInterceptor(requestBody: true, responseBody: true));
     dio!.interceptors.add(getCacheManager().interceptor);
     dio!.interceptors.add(
       InterceptorsWrapper(
