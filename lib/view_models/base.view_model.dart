@@ -389,6 +389,13 @@ class MyBaseViewModel extends BaseViewModel
   // NEW LOCATION PICKER
   Future<dynamic> newPlacePicker() async {
     //
+    //force a fresh, awaited location fetch if the background fetch from
+    //app startup (home.page.dart) hasn't resolved yet - otherwise this
+    //picker opens on Null Island at zoom 0 instead of the device's
+    //actual position.
+    if (LocationService.currenctAddress == null) {
+      await LocationService.prepareLocationListener(true);
+    }
     LatLng initialPosition = LatLng(0.00, 0.00);
     double initialZoom = 0;
     if (LocationService.currenctAddress != null) {
