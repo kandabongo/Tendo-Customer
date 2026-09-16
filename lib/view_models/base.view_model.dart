@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:fuodz/constants/api.dart';
 import 'package:fuodz/constants/app_map_settings.dart';
@@ -443,6 +443,13 @@ class MyBaseViewModel extends BaseViewModel
               region: mapRegion,
               onPlacePicked: (result) {
                 Navigator.of(context).pop(result);
+              },
+              onMapCreated: (controller) {
+                //diagnostic only - proves whether the underlying GoogleMap
+                //widget actually initializes at all, to distinguish "the
+                //map silently fails to build" from "the map builds but its
+                //tiles don't render" (the long-suspected API key issue).
+                print("PlacePicker map created");
               },
               initialPosition: initialPosition,
             ),
