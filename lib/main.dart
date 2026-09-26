@@ -1,8 +1,10 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:io';
 
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:fuodz/my_app.dart';
 import 'package:fuodz/services/cache.service.dart';
@@ -31,6 +33,17 @@ void main() async {
       WidgetsFlutterBinding.ensureInitialized();
       //setting up firebase notifications
       await Firebase.initializeApp();
+      //App Check: debug builds use the debug provider (its token must be
+      //registered once in Firebase Console -> App Check -> Manage debug
+      //tokens); release builds use Play Integrity, matching the app's
+      //actual signing key registered with Play/Firebase. Activating this
+      //explicitly - previously neither provider was configured at all, so
+      //release builds only passed via Firebase Auth's own implicit
+      //Play Integrity fallback, and debug builds had no fallback whatsoever.
+      await FirebaseAppCheck.instance.activate(
+        androidProvider:
+            kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+      );
       await PhoneUtilService.init();
 
       await translator.init(
@@ -62,5 +75,3 @@ void main() async {
     },
   );
 }
-
-
