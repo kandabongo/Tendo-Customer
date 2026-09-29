@@ -388,73 +388,89 @@ class MyBaseViewModel extends BaseViewModel
 
   // NEW LOCATION PICKER
   Future<dynamic> newPlacePicker() async {
-    //
-    //force a fresh, awaited location fetch if the background fetch from
-    //app startup (home.page.dart) hasn't resolved yet - otherwise this
-    //picker opens on Null Island at zoom 0 instead of the device's
-    //actual position.
-    if (LocationService.currenctAddress == null) {
-      await LocationService.prepareLocationListener(true);
-    }
-    LatLng initialPosition = LatLng(0.00, 0.00);
-    double initialZoom = 0;
-    if (LocationService.currenctAddress != null) {
-      initialPosition = LatLng(
-        LocationService.currenctAddress?.coordinates?.latitude ?? 0.00,
-        LocationService.currenctAddress?.coordinates?.longitude ?? 0.00,
-      );
-      initialZoom = 15;
-    }
-    String? mapRegion;
     try {
-      mapRegion = await Utils.getCurrentCountryCode();
-    } catch (error) {
-      print("Error getting sim country code => $error");
-    }
-    mapRegion ??= AppStrings.countryCode
-        .trim()
-        .split(",")
-        .firstWhere(
-          (e) => !e.toLowerCase().contains("auto"),
-          orElse: () {
-            return "";
-          },
-        );
+      //TEMP DEBUG - proves the tap reached this method. Remove after testing.
+      toastError("DEBUG: opening map picker");
 
-    //
-    if (!AppMapSettings.useGoogleOnApp) {
-      return await viewContext.push(
-        (context) => OPSMapPage(
-          region: mapRegion,
-          initialPosition: initialPosition,
-          useCurrentLocation: true,
-          initialZoom: initialZoom,
+      //force a fresh, awaited location fetch if the background fetch from
+      //app startup (home.page.dart) hasn't resolved yet - otherwise this
+      //picker opens on Null Island at zoom 0 instead of the device's
+      //actual position. Wrapped with a timeout so a slow/blocked GPS fix
+      //can't hang this method (and the tap) forever with no feedback.
+      if (LocationService.currenctAddress == null) {
+        try {
+          await LocationService.prepareLocationListener(
+            true,
+          ).timeout(const Duration(seconds: 10));
+        } catch (error) {
+          print("Location prep failed/timed out ==> $error");
+        }
+      }
+      LatLng initialPosition = LatLng(0.00, 0.00);
+      double initialZoom = 0;
+      if (LocationService.currenctAddress != null) {
+        initialPosition = LatLng(
+          LocationService.currenctAddress?.coordinates?.latitude ?? 0.00,
+          LocationService.currenctAddress?.coordinates?.longitude ?? 0.00,
+        );
+        initialZoom = 15;
+      }
+      String? mapRegion;
+      try {
+        mapRegion = await Utils.getCurrentCountryCode();
+      } catch (error) {
+        print("Error getting sim country code => $error");
+      }
+      mapRegion ??= AppStrings.countryCode
+          .trim()
+          .split(",")
+          .firstWhere(
+            (e) => !e.toLowerCase().contains("auto"),
+            orElse: () {
+              return "";
+            },
+          );
+
+      //
+      if (!AppMapSettings.useGoogleOnApp) {
+        return await viewContext.push(
+          (context) => OPSMapPage(
+            region: mapRegion,
+            initialPosition: initialPosition,
+            useCurrentLocation: true,
+            initialZoom: initialZoom,
+          ),
+        );
+      }
+      //google maps
+      return await Navigator.push(
+        viewContext,
+        MaterialPageRoute(
+          builder:
+              (context) => PlacePicker(
+                apiKey: AppStrings.googleMapApiKey,
+                autocompleteLanguage: translator.activeLocale.languageCode,
+                region: mapRegion,
+                onPlacePicked: (result) {
+                  Navigator.of(context).pop(result);
+                },
+                onMapCreated: (controller) {
+                  //diagnostic only - proves whether the underlying GoogleMap
+                  //widget actually initializes at all, to distinguish "the
+                  //map silently fails to build" from "the map builds but its
+                  //tiles don't render" (the long-suspected API key issue).
+                  print("PlacePicker map created");
+                },
+                initialPosition: initialPosition,
+              ),
         ),
       );
+    } catch (error) {
+      //TEMP DEBUG - surfaces any failure that was previously silent.
+      print("newPlacePicker failed ==> $error");
+      toastError("Map failed to open: $error");
+      return null;
     }
-    //google maps
-    return await Navigator.push(
-      viewContext,
-      MaterialPageRoute(
-        builder:
-            (context) => PlacePicker(
-              apiKey: AppStrings.googleMapApiKey,
-              autocompleteLanguage: translator.activeLocale.languageCode,
-              region: mapRegion,
-              onPlacePicked: (result) {
-                Navigator.of(context).pop(result);
-              },
-              onMapCreated: (controller) {
-                //diagnostic only - proves whether the underlying GoogleMap
-                //widget actually initializes at all, to distinguish "the
-                //map silently fails to build" from "the map builds but its
-                //tiles don't render" (the long-suspected API key issue).
-                print("PlacePicker map created");
-              },
-              initialPosition: initialPosition,
-            ),
-      ),
-    );
   }
 
   //share
