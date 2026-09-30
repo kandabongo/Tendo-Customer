@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -8,24 +8,24 @@ import 'package:fuodz/models/delivery_address.dart';
 import 'package:fuodz/services/app.service.dart';
 import 'package:fuodz/services/local_storage.service.dart';
 import 'package:fuodz/widgets/bottomsheets/location_permission.bottomsheet.dart';
-import 'package:geolocator/geolocator.dart' show Geolocator;
-import 'package:location/location.dart';
+import 'package:geolocator/geolocator.dart'
+    show Geolocator, LocationPermission, Position;
 // import 'package:geocoder/geocoder.dart';
 import 'package:rxdart/rxdart.dart';
 import 'geocoder.service.dart';
 
 class LocationService {
   //
-  static Location location = new Location();
-
   static bool? serviceEnabled;
-  static PermissionStatus? _permissionGranted;
-  static LocationData? _locationData;
+  static LocationPermission? _permissionGranted;
+  static double? _lastLat;
+  static double? _lastLng;
   static Address? currenctAddress;
   static DeliveryAddress? deliveryaddress;
   static bool _isFetchingLocation = false;
   static bool _isGeocoding = false;
-  static LocationData? _lastAcceptedLocationData;
+  static double? _lastAcceptedLat;
+  static double? _lastAcceptedLng;
   static DateTime? _lastAcceptedLocationAt;
 
   //fastest speed a human-carried device could plausibly travel at (~300km/h,
@@ -45,46 +45,63 @@ class LocationService {
   //fetches the user's current location once and geocodes it. No feature in
   //the app needs a live/continuous GPS stream, so this is a single
   //request/response instead of an open-ended position stream.
+  //
+  //Uses Geolocator (not the `location` package) throughout: on some
+  //devices/Android versions the `location` plugin's Activity binding never
+  //attaches, so every call - permission check included - throws
+  //PlatformException(NO_ACTIVITY, ...) unconditionally. Geolocator doesn't
+  //have that failure mode and is already used successfully elsewhere in
+  //this app (e.g. setupCurrentLocationAsPickuplocation).
   static Future<void> prepareLocationListener([bool oneTime = false]) async {
     if (_isFetchingLocation) return;
     _isFetchingLocation = true;
     try {
-      _permissionGranted = await location.hasPermission();
-      if (_permissionGranted == PermissionStatus.denied) {
+      _permissionGranted = await Geolocator.checkPermission();
+      if (_permissionGranted == LocationPermission.denied) {
         //
         bool requestPermission = true;
         if (!Platform.isIOS) {
           requestPermission = await showRequestDialog();
         }
         if (requestPermission) {
-          _permissionGranted = await location.requestPermission();
-          if (_permissionGranted != PermissionStatus.granted) {
-            return;
-          }
+          _permissionGranted = await Geolocator.requestPermission();
         }
       }
+      if (_permissionGranted == LocationPermission.denied ||
+          _permissionGranted == LocationPermission.deniedForever) {
+        return;
+      }
 
-      serviceEnabled = await location.serviceEnabled();
+      serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (serviceEnabled == null || serviceEnabled! == false) {
-        serviceEnabled = await location.requestService();
-        if (serviceEnabled == null || serviceEnabled! == false) {
-          return;
-        }
+        print("Location services are disabled");
+        return;
       }
 
-      final newLocationData = await location.getLocation();
-      if (!_isPlausibleLocation(newLocationData)) {
+      final newPosition = await Geolocator.getCurrentPosition().timeout(
+        const Duration(seconds: 8),
+        onTimeout: () {
+          throw TimeoutException("Location fetch timed out after 8s");
+        },
+      );
+      if (!_isPlausiblePosition(newPosition)) {
         print(
           "Ignoring implausible location fix ==> "
-          "${newLocationData.latitude}, ${newLocationData.longitude}",
+          "${newPosition.latitude}, ${newPosition.longitude}",
         );
         return;
       }
 
-      _locationData = newLocationData;
-      _lastAcceptedLocationData = newLocationData;
+      _lastLat = newPosition.latitude;
+      _lastLng = newPosition.longitude;
+      _lastAcceptedLat = newPosition.latitude;
+      _lastAcceptedLng = newPosition.longitude;
       _lastAcceptedLocationAt = DateTime.now();
       await geocodeCurrentLocation();
+    } on TimeoutException catch (error) {
+      print("Location fetch timed out ==> $error");
+    } catch (error) {
+      print("Error fetching location ==> $error");
     } finally {
       _isFetchingLocation = false;
     }
@@ -93,10 +110,11 @@ class LocationService {
   //rejects a GPS fix that would require the device to have travelled faster
   //than is humanly/vehicle-possible since the last accepted fix - a sign of
   //a glitched/bad reading rather than real movement.
-  static bool _isPlausibleLocation(LocationData newLocationData) {
-    final lastData = _lastAcceptedLocationData;
+  static bool _isPlausiblePosition(Position newPosition) {
+    final lastLat = _lastAcceptedLat;
+    final lastLng = _lastAcceptedLng;
     final lastAt = _lastAcceptedLocationAt;
-    if (lastData == null || lastAt == null) {
+    if (lastLat == null || lastLng == null || lastAt == null) {
       return true;
     }
 
@@ -107,10 +125,10 @@ class LocationService {
     }
 
     final distanceMeters = Geolocator.distanceBetween(
-      lastData.latitude,
-      lastData.longitude,
-      newLocationData.latitude,
-      newLocationData.longitude,
+      lastLat,
+      lastLng,
+      newPosition.latitude,
+      newPosition.longitude,
     );
 
     final impliedSpeed = distanceMeters / elapsedSeconds;
@@ -136,19 +154,16 @@ class LocationService {
     return requestResult;
   }
 
-  //geocodes the last fetched `_locationData` into an address, once.
+  //geocodes the last fetched position into an address, once.
   //guarded so overlapping calls (e.g. a stale caller retrying while a
   //previous geocode is still in flight) can't pile up or race each other.
   static Future<void> geocodeCurrentLocation() async {
-    if (_isGeocoding || _locationData == null) {
+    if (_isGeocoding || _lastLat == null || _lastLng == null) {
       return;
     }
 
     _isGeocoding = true;
-    final coordinates = new Coordinates(
-      _locationData?.latitude ?? 0.0,
-      _locationData?.longitude ?? 0.0,
-    );
+    final coordinates = new Coordinates(_lastLat ?? 0.0, _lastLng ?? 0.0);
 
     try {
       //
