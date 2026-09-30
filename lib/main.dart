@@ -13,6 +13,8 @@ import 'package:fuodz/services/deep_link.service.dart';
 import 'package:fuodz/services/local_storage.service.dart';
 import 'package:fuodz/services/phone_util.service.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_maps_flutter_android/google_maps_flutter_android.dart';
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:localize_and_translate/localize_and_translate.dart';
 
 import 'constants/app_languages.dart';
@@ -31,6 +33,17 @@ void main() async {
   await runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+
+      //Forces Hybrid Composition for the Android GoogleMap platform view
+      //instead of the default texture-based rendering. Some devices/GPU
+      //drivers (MediaTek-based budget phones especially) hit a
+      //BLASTBufferQueue buffer-acquisition stall with the default mode,
+      //leaving the map tiles permanently blank while the rest of the
+      //screen still works.
+      final mapsImplementation = GoogleMapsFlutterPlatform.instance;
+      if (mapsImplementation is GoogleMapsFlutterAndroid) {
+        mapsImplementation.useAndroidViewSurface = true;
+      }
       //setting up firebase notifications
       await Firebase.initializeApp();
       //App Check: debug builds use the debug provider (its token must be
