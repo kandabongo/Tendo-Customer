@@ -121,6 +121,11 @@ class ServiceViewModel extends MyBaseViewModel {
         perPage: 10,
         customParams: {"order_by": "services"},
       );
+      // the API omits vendor_type on category payloads; without it the
+      // subcategory search can't tell this is a service vertical
+      for (final category in categories) {
+        category.vendorType ??= vendorType;
+      }
     } catch (error) {
       print("Error ==> $error");
     }
