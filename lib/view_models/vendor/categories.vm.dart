@@ -35,6 +35,11 @@ class CategoriesViewModel extends MyBaseViewModel {
         vendorTypeId: vendorType?.id,
         page: page,
       );
+      // the API omits vendor_type on category payloads; without it the
+      // subcategory search can't tell this is a service vertical
+      for (final category in categories) {
+        category.vendorType ??= vendorType;
+      }
       clearErrors();
     } catch (error) {
       setError(error);

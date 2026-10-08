@@ -58,6 +58,7 @@ class _SubcategoryItemsViewState extends State<SubcategoryItemsView>
         widget.subcategory!.name == "Others".tr();
 
     final search = Search(
+      type: (widget.category.vendorType?.isService ?? false) ? "service" : "",
       vendorType: widget.category.vendorType,
       category: isAllOrOthers ? widget.category : null,
       subcategory: isAllOrOthers ? null : widget.subcategory,

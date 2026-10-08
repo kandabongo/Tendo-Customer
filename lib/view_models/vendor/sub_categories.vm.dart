@@ -82,6 +82,7 @@ class SubcategoriesViewModel extends MyBaseViewModel {
     bool isAllOrOthers =
         subcategory.name == "All".tr() || subcategory.name == "Others".tr();
     final search = Search(
+      type: (category.vendorType?.isService ?? false) ? "service" : "",
       vendorType: category.vendorType,
       category: isAllOrOthers ? category : null,
       subcategory: isAllOrOthers ? null : subcategory,
