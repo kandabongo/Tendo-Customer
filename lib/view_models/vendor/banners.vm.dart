@@ -32,6 +32,10 @@ class BannersViewModel extends MyBaseViewModel {
       banners = await _bannerRequest.banners(
         vendorTypeId: vendorType?.id,
         params: {"featured": featured ? "1" : "0"},
+        onBackgroundUpdate: (fresh) {
+          banners = fresh;
+          notifyListeners();
+        },
       );
       clearErrors();
     } catch (error) {

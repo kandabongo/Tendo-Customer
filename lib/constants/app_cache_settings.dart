@@ -5,8 +5,8 @@ class AppCacheSettings {
   //categories listing - 24 hours
   static const int categoriesTtlMinutes = 24 * 60;
 
-  //banners (home/vendor type screens) - 12 hours
-  static const int bannersTtlMinutes = 12 * 60;
+  //banners (home/vendor type screens) - 5 minutes
+  static const int bannersTtlMinutes = 5;
 
   //single vendor details ("show" endpoint), including checkout - 15 minutes
   static const int vendorDetailsTtlMinutes = 15;
