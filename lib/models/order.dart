@@ -43,6 +43,7 @@ class Order {
     this.deliveryAddressId,
     this.paymentMethodId,
     this.vendorId,
+    this.vendorTypeId,
     this.userId = 0,
     this.driverId,
     required this.createdAt,
@@ -97,6 +98,7 @@ class Order {
   int? deliveryAddressId;
   int? paymentMethodId;
   int? vendorId;
+  int? vendorTypeId;
   int userId;
   int? driverId;
   String? pickupDate;
@@ -200,6 +202,10 @@ class Order {
           json["vendor_id"] == null
               ? null
               : int.parse(json["vendor_id"].toString()),
+      vendorTypeId:
+          json["vendor_type_id"] == null
+              ? null
+              : int.tryParse(json["vendor_type_id"].toString()),
       userId: int.parse(json["user_id"].toString()),
       driverId:
           json["driver_id"] == null
@@ -368,6 +374,7 @@ class Order {
     this.deliveryAddressId = other.deliveryAddressId;
     this.paymentMethodId = other.paymentMethodId;
     this.vendorId = other.vendorId;
+    this.vendorTypeId = other.vendorTypeId;
     this.userId = other.userId;
     this.driverId = other.driverId;
     this.pickupDate = other.pickupDate;
@@ -440,6 +447,9 @@ class Order {
   bool get canZoomOnDropoffLocation => ["enroute"].contains(status);
 
   bool get isScheduled => status == "scheduled";
+
+  /// An Assist (home services) job that a provider has accepted.
+  bool get isAssistJob => vendorTypeId == 5 && vendorId != null;
   bool get isSenderPaying {
     return payer == null || payer == "1";
   }

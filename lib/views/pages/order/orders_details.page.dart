@@ -4,6 +4,7 @@ import 'package:fuodz/constants/sizes.dart';
 import 'package:fuodz/models/order.dart';
 import 'package:fuodz/utils/ui_spacer.dart';
 import 'package:fuodz/view_models/order_details.vm.dart';
+import 'package:fuodz/views/pages/order/widgets/assist_extras.view.dart';
 import 'package:fuodz/views/pages/order/widgets/order.bottomsheet.dart';
 import 'package:fuodz/views/pages/order/widgets/order_address.view.dart';
 import 'package:fuodz/views/pages/order/widgets/order_attachment.view.dart';
@@ -104,6 +105,13 @@ class OrderDetailsPage extends StatelessWidget {
 
                             // 4. Products / Services / Items Card
                             OrderDetailsCard(child: OrderDetailsItemsView(vm)),
+
+                            // Assist: additional work to approve, materials added
+                            if (vm.order.isAssistJob)
+                              AssistExtrasView(
+                                key: ValueKey("assist-extras-${vm.order.id}"),
+                                order: vm.order,
+                              ),
 
                             // 5. Vendor Info Card
                             OrderDetailsCard(
