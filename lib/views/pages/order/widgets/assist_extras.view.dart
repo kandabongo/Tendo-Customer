@@ -220,7 +220,26 @@ class _AssistExtrasViewState extends State<AssistExtrasView> {
               _row("Additional work".tr(), _money(invoice.additionalWork)),
             if (invoice.materials > 0) _row("Materials".tr(), _money(invoice.materials)),
             if (invoice.transport > 0) _row("Transport".tr(), _money(invoice.transport)),
+            //Provider Mobility: own-vehicle travel allowance is part of the Assist amount.
+            if (invoice.transportMode == "own" && invoice.travelAllowance > 0)
+              _row("Travel (own vehicle)".tr(), _money(invoice.travelAllowance)),
             _row("Total".tr(), _money(invoice.total), bold: true),
+            //Provider Mobility: total the customer pays for Assist (service + own travel).
+            if (invoice.transportMode == "own" && invoice.travelAllowance > 0)
+              _row("Total payable (Assist)".tr(), _money(invoice.totalPayable),
+                  bold: true),
+            //Provider Mobility: a Tendo Taxi fare is billed and paid separately.
+            if (invoice.transportMode == "taxi" && invoice.taxiFare > 0) ...[
+              _row("Taxi fare".tr(), _money(invoice.taxiFare)),
+              Padding(
+                padding: const EdgeInsets.only(top: 4, bottom: 4),
+                child: Text(
+                  "Taxi fare is paid separately through your Tendo Taxi booking, not as part of the Assist payment."
+                      .tr(),
+                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                ),
+              ),
+            ],
             if (invoice.additionalWorkPending > 0)
               _row(
                 "Not included until you approve".tr(),
