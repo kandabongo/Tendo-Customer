@@ -38,12 +38,27 @@ class ModernServiceGridviewListItem extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(Sizes.radiusSmall),
-              child: CustomImage(
-                imageUrl: service.photos.first,
-                width: double.infinity,
-                height: 80,
-                boxFit: BoxFit.cover,
-              ),
+              child:
+                  service.photos.isNotEmpty
+                      ? CustomImage(
+                        imageUrl: service.photos.first,
+                        width: double.infinity,
+                        height: 80,
+                        boxFit: BoxFit.cover,
+                      )
+                      : Container(
+                        width: double.infinity,
+                        height: 80,
+                        alignment: Alignment.center,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.08),
+                        child: Icon(
+                          Icons.home_repair_service,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 28,
+                        ),
+                      ),
             ),
             SizedBox(height: 12),
             service.name.text

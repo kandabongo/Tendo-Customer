@@ -49,11 +49,24 @@ class ServiceBookingSummaryPage extends StatelessWidget {
                       //service details in summary page
                       HStack([
                         //service logo
-                        CustomImage(
-                          imageUrl: vm.service!.photos.first,
-                          width: context.percentWidth * 18,
-                          height: 80,
-                        ),
+                        vm.service!.photos.isNotEmpty
+                            ? CustomImage(
+                              imageUrl: vm.service!.photos.first,
+                              width: context.percentWidth * 18,
+                              height: 80,
+                            )
+                            : Container(
+                              width: context.percentWidth * 18,
+                              height: 80,
+                              alignment: Alignment.center,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withOpacity(0.08),
+                              child: Icon(
+                                Icons.home_repair_service,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
                         //service details
                         VStack([
                           vm.service!.name.text.xl.maxLines(2).ellipsis.make(),

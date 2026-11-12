@@ -100,30 +100,61 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            PageView.builder(
-              itemCount: widget.service.photos.length,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentImageIndex = index;
-                });
-              },
-              itemBuilder: (context, index) {
-                return CachedNetworkImage(
-                  imageUrl: widget.service.photos[index],
-                  fit: BoxFit.cover,
-                  placeholder:
-                      (context, url) => Container(
-                        color: Colors.grey[300],
-                        child: const Center(child: CircularProgressIndicator()),
+            if (widget.service.photos.isEmpty)
+              // Canonical catalogue service with no photo: show a branded placeholder.
+              Container(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.home_repair_service,
+                      size: 56,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(
+                        widget.service.name,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                  errorWidget:
-                      (context, url, error) => Container(
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.error),
-                      ),
-                );
-              },
-            ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              PageView.builder(
+                itemCount: widget.service.photos.length,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentImageIndex = index;
+                  });
+                },
+                itemBuilder: (context, index) {
+                  return CachedNetworkImage(
+                    imageUrl: widget.service.photos[index],
+                    fit: BoxFit.cover,
+                    placeholder:
+                        (context, url) => Container(
+                          color: Colors.grey[300],
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                    errorWidget:
+                        (context, url, error) => Container(
+                          color: Colors.grey[300],
+                          child: const Icon(Icons.error),
+                        ),
+                  );
+                },
+              ),
             if (widget.service.photos.length > 1)
               Positioned(
                 bottom: 16,

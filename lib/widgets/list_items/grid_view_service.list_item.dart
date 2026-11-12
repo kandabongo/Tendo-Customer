@@ -27,12 +27,27 @@ class GridViewServiceListItem extends StatelessWidget {
             children: [
               Hero(
                 tag: service.heroTag ?? service.id,
-                child: CustomImage(
-                  imageUrl: service.photos.first,
-                  boxFit: BoxFit.cover,
-                  width: double.infinity,
-                  height: 80,
-                ),
+                child:
+                    service.photos.isNotEmpty
+                        ? CustomImage(
+                          imageUrl: service.photos.first,
+                          boxFit: BoxFit.cover,
+                          width: double.infinity,
+                          height: 80,
+                        )
+                        : Container(
+                          width: double.infinity,
+                          height: 80,
+                          alignment: Alignment.center,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withOpacity(0.08),
+                          child: Icon(
+                            Icons.home_repair_service,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 28,
+                          ),
+                        ),
               ),
 
               //discount
