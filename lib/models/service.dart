@@ -49,12 +49,12 @@ class Service {
   double discountPrice;
   String duration;
   int isActive;
-  int vendorId;
+  int? vendorId;
   int? categoryId;
   DateTime createdAt;
   DateTime updatedAt;
   String formattedDate;
-  Vendor vendor;
+  Vendor? vendor;
   Category? category;
   Category? subcategory;
   List<String> photos = const [];
@@ -96,13 +96,16 @@ class Service {
           json["is_active"] == null
               ? 0
               : int.parse(json["is_active"].toString()),
-      vendorId: int.parse(json["vendor_id"].toString()),
+      vendorId:
+          json["vendor_id"] == null
+              ? null
+              : int.parse(json["vendor_id"].toString()),
       categoryId: json["category_id"] == null ? null : json["category_id"],
       createdAt: DateTime.parse(json["created_at"]),
       updatedAt: DateTime.parse(json["updated_at"]),
       formattedDate:
           json["formatted_date"] == null ? null : json["formatted_date"],
-      vendor: Vendor.fromJson(json["vendor"]),
+      vendor: json["vendor"] == null ? null : Vendor.fromJson(json["vendor"]),
       category:
           json["category"] == null ? null : Category.fromJson(json["category"]),
       subcategory:
@@ -150,7 +153,7 @@ class Service {
     "created_at": createdAt.toIso8601String(),
     "updated_at": updatedAt.toIso8601String(),
     "formatted_date": formattedDate,
-    "vendor": vendor.toJson(),
+    "vendor": vendor?.toJson(),
     "category": category?.toJson(),
     "option_groups":
         optionGroups == null

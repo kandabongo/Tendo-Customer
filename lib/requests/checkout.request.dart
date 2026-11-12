@@ -187,7 +187,9 @@ class CheckoutRequest extends HttpService {
       "type": "service",
       "note": note,
       "service_id": service.id,
-      "vendor_id": service.vendor.id,
+      // Null for a canonical catalogue service: Tendo assigns a provider
+      // server-side (describe-and-dispatch), rather than booking a fixed vendor.
+      "vendor_id": service.vendor?.id,
       "delivery_address_id": checkout.deliveryAddress?.id,
       "pickup_date": checkout.deliverySlotDate,
       "pickup_time": checkout.deliverySlotTime,

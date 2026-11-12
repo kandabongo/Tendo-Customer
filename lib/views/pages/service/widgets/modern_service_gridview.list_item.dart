@@ -55,18 +55,22 @@ class ModernServiceGridviewListItem extends StatelessWidget {
 
             SizedBox(height: 4),
             Text(
-              'by %s'.tr().fill([service.vendor.name]),
+              service.vendor == null
+                  ? 'Tendo Assist'.tr()
+                  : 'by %s'.tr().fill([service.vendor!.name]),
               style: TextStyle(fontSize: 12),
             ),
             Spacer(),
             Row(
               children: [
-                Icon(Icons.star, color: Colors.amber, size: 14),
-                SizedBox(width: 4),
-                Text(
-                  "${service.vendor.rating}",
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                ),
+                if (service.vendor != null) ...[
+                  Icon(Icons.star, color: Colors.amber, size: 14),
+                  SizedBox(width: 4),
+                  Text(
+                    "${service.vendor!.rating}",
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                  ),
+                ],
                 Spacer(),
                 Text(
                   "${AppStrings.currentCurrencySymbol} ${service.sellPrice.convertCurrency}"

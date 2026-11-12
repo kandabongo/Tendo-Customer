@@ -67,7 +67,7 @@ class ServiceDetailsPriceSectionView extends StatelessWidget {
       Visibility(
         visible: !onlyPrice,
         child: VxRating(
-          value: double.parse((service.vendor.rating).toString()),
+          value: double.parse((service.vendor?.rating ?? 0).toString()),
           count: 5,
           isSelectable: false,
           onRatingUpdate: (value) {},
