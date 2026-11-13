@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:fuodz/constants/app_routes.dart';
 import 'package:fuodz/constants/app_strings.dart';
+import 'package:fuodz/models/api_response.dart';
 import 'package:fuodz/requests/auth.request.dart';
 import 'package:fuodz/services/alert.service.dart';
 import 'package:fuodz/services/auth.service.dart';
@@ -80,10 +81,13 @@ class RegisterViewModel extends MyBaseViewModel {
     //firebase authentication
     await FirebaseAuth.instance.verifyPhoneNumber(
       phoneNumber: accountPhoneNumber,
-      verificationCompleted: (PhoneAuthCredential credential) {
-        // firebaseVerificationId = credential.verificationId;
-        // verifyFirebaseOTP(credential.smsCode);
-        finishAccountRegistration();
+      verificationCompleted: (PhoneAuthCredential credential) async {
+        // Auto-retrieval (Android): sign in with the credential so the
+        // Firebase session exists before we register with the backend.
+        try {
+          await FirebaseAuth.instance.signInWithCredential(credential);
+        } catch (_) {}
+        await finishAccountRegistration();
       },
       verificationFailed: (FirebaseAuthException e) {
         setBusy(false);
@@ -197,14 +201,29 @@ class RegisterViewModel extends MyBaseViewModel {
   Future<void> finishAccountRegistration() async {
     setBusy(true);
 
-    final apiResponse = await _authRequest.registerRequest(
-      name: nameTEC.text,
-      email: emailTEC.text,
-      phone: accountPhoneNumber!,
-      countryCode: selectedCountry!.countryCode,
-      password: passwordTEC.text,
-      code: referralCodeTEC.text,
-    );
+    ApiResponse apiResponse;
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    if (AppStrings.isFirebaseOtp && firebaseUser != null) {
+      // Phone-first: the Firebase OTP is already verified. Send name + phone +
+      // the Firebase ID token; the backend auto-activates the customer.
+      final idToken = await firebaseUser.getIdToken() ?? "";
+      apiResponse = await _authRequest.registerWithPhone(
+        name: nameTEC.text,
+        phone: accountPhoneNumber!,
+        firebaseIdToken: idToken,
+        countryCode: selectedCountry!.countryCode,
+        email: emailTEC.text,
+      );
+    } else {
+      apiResponse = await _authRequest.registerRequest(
+        name: nameTEC.text,
+        email: emailTEC.text,
+        phone: accountPhoneNumber!,
+        countryCode: selectedCountry!.countryCode,
+        password: passwordTEC.text,
+        code: referralCodeTEC.text,
+      );
+    }
 
     setBusy(false);
 
@@ -217,9 +236,12 @@ class RegisterViewModel extends MyBaseViewModel {
         );
       } else {
         //everything works well
-        //firebase auth
+        //firebase auth (fb_token can be null if Firebase custom-token generation
+        //was unavailable server-side; the phone session remains valid either way)
         final fbToken = apiResponse.body["fb_token"];
-        await FirebaseAuth.instance.signInWithCustomToken(fbToken);
+        if (fbToken != null && "$fbToken".isNotEmpty) {
+          await FirebaseAuth.instance.signInWithCustomToken(fbToken);
+        }
         await AuthServices.saveUser(apiResponse.body["user"]);
         await AuthServices.setAuthBearerToken(apiResponse.body["token"]);
         await AuthServices.isAuthenticated();
