@@ -50,6 +50,29 @@ class AuthRequest extends HttpService {
   }
 
   //
+  /// Phone-first registration: the Firebase OTP has already been verified on the
+  /// client, so we send only name + phone + the Firebase ID token. The backend
+  /// auto-activates customers (and creates drivers/providers pending).
+  Future<ApiResponse> registerWithPhone({
+    required String name,
+    required String phone,
+    required String firebaseIdToken,
+    String countryCode = "ZM",
+    String role = "client",
+    String? email,
+  }) async {
+    final apiResult = await post(Api.registerPhone, {
+      "name": name,
+      "phone": phone,
+      "firebase_id_token": firebaseIdToken,
+      "country_code": countryCode,
+      "role": role,
+      if (email != null && email.isNotEmpty) "email": email,
+      "tokens": await FirebaseTokenService().getDeviceToken(),
+    });
+    return ApiResponse.fromResponse(apiResult);
+  }
+
   Future<ApiResponse> registerRequest({
     required String name,
     required String email,
