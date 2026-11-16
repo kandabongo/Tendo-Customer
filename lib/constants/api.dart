@@ -23,6 +23,8 @@ class Api {
   static const login = "/login";
   static const qrlogin = "/login/qrcode";
   static const register = "/register";
+  static const registerPhone = "/register/phone";
+  static const linkPhone = "/account/link-phone";
   static const logout = "/logout";
   static const forgotPassword = "/password/reset/init";
   static const verifyPhoneAccount = "/verify/phone";

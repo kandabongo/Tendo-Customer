@@ -72,18 +72,20 @@ class _RegisterPageState extends State<RegisterPage> {
                             validator: FormValidator.validateName,
                           ).py12(),
                           //
-                          CustomTextFormField(
-                            labelText: "Email".tr(),
-                            keyboardType: TextInputType.emailAddress,
-                            textEditingController: model.emailTEC,
-                            validator: FormValidator.validateEmail,
-                            //remove space
-                            inputFormatters: [
-                              FilteringTextInputFormatter.deny(
-                                RegExp(' '),
-                              ), // removes spaces
-                            ],
-                          ).py12(),
+                          // Phone-first (Firebase OTP): email is not required.
+                          if (!AppStrings.isFirebaseOtp)
+                            CustomTextFormField(
+                              labelText: "Email".tr(),
+                              keyboardType: TextInputType.emailAddress,
+                              textEditingController: model.emailTEC,
+                              validator: FormValidator.validateEmail,
+                              //remove space
+                              inputFormatters: [
+                                FilteringTextInputFormatter.deny(
+                                  RegExp(' '),
+                                ), // removes spaces
+                              ],
+                            ).py12(),
                           //
                           HStack([
                             CustomTextFormField(
@@ -113,18 +115,20 @@ class _RegisterPageState extends State<RegisterPage> {
                             ).expand(),
                           ]).py12(),
                           //
-                          CustomTextFormField(
-                            labelText: "Password".tr(),
-                            obscureText: true,
-                            textEditingController: model.passwordTEC,
-                            validator: FormValidator.validatePassword,
-                            //remove space
-                            inputFormatters: [
-                              FilteringTextInputFormatter.deny(
-                                RegExp(' '),
-                              ), // removes spaces
-                            ],
-                          ).py12(),
+                          // Phone-first (Firebase OTP): no password needed.
+                          if (!AppStrings.isFirebaseOtp)
+                            CustomTextFormField(
+                              labelText: "Password".tr(),
+                              obscureText: true,
+                              textEditingController: model.passwordTEC,
+                              validator: FormValidator.validatePassword,
+                              //remove space
+                              inputFormatters: [
+                                FilteringTextInputFormatter.deny(
+                                  RegExp(' '),
+                                ), // removes spaces
+                              ],
+                            ).py12(),
                           //
                           AppStrings.enableReferSystem
                               ? CustomTextFormField(
