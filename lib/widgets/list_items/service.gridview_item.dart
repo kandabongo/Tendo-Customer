@@ -101,7 +101,10 @@ class ServiceGridViewItem extends StatelessWidget {
             "${service.name}".text.sm.semiBold.maxLines(2).ellipsis.make(),
             UiSpacer.divider(thickness: 0.50, height: 0.3).py8().px4(),
             //provider info
-            VendorInfoView(service.vendor),
+            if (service.vendor != null)
+              VendorInfoView(service.vendor!)
+            else
+              "Tendo Assist".tr().text.sm.light.make(),
             UiSpacer.vSpace(10),
           ]).px12().py4(),
         ])

@@ -65,7 +65,7 @@ class ServiceBookingSummaryViewModel extends CheckoutBaseViewModel {
     setBusyForObject(paymentMethods, true);
     try {
       paymentMethods = await paymentOptionRequest.getPaymentOptions(
-        vendorId: vendorId ?? service!.vendor.id,
+        vendorId: vendorId ?? service!.vendor?.id,
       );
       //
       clearErrors();

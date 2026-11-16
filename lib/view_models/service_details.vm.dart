@@ -48,9 +48,12 @@ class ServiceDetailsViewModel extends MyBaseViewModel {
 
   //
   void openVendorPage() {
+    final vendor = service.vendor;
+    // No provider assigned yet for a canonical catalogue service.
+    if (vendor == null) return;
     Navigator.of(
       viewContext,
-    ).pushNamed(AppRoutes.vendorDetails, arguments: service.vendor);
+    ).pushNamed(AppRoutes.vendorDetails, arguments: vendor);
   }
 
   //

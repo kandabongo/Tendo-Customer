@@ -2,10 +2,12 @@ name: Build Release APK
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, "fix/assist-catalogue-null-vendor"]
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - name: Set up Java
@@ -30,6 +32,22 @@ jobs:
         run: flutter build apk --release
       - name: Build release App Bundle
         run: flutter build appbundle --release
+      - name: Publish signed APK as a Release (one-tap phone install)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: assist-fix-${{ github.run_number }}
+          name: Assist catalogue fix (build ${{ github.run_number }})
+          body: |
+            Signed release build with the Assist canonical-catalogue fix
+            (vendor-less services now parse and display).
+
+            Install this APK over your current app - it is signed with the
+            same release key, so there is no need to uninstall and your login
+            is kept. After installing, open Assist: Browse Categories,
+            Trending This Week and Popular Services will now list services.
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:

@@ -65,7 +65,12 @@ class AssistInvoice {
     required this.commission,
     required this.extraWorkItems,
     required this.materialItems,
-  });
+    this.transportMode,
+    this.travelAllowance = 0,
+    this.taxiFare = 0,
+    this.linkedTaxiOrderId,
+    double? totalPayable,
+  }) : totalPayable = totalPayable ?? total;
 
   /// True once the job is closed: nothing can be added or changed.
   final bool locked;
@@ -80,6 +85,22 @@ class AssistInvoice {
   final double? commission;
   final List<AssistExtraWork> extraWorkItems;
   final List<AssistMaterialItem> materialItems;
+
+  // Provider Mobility (Assist): transport breakdown the customer sees.
+  /// own | taxi | null
+  final String? transportMode;
+
+  /// Own-vehicle travel allowance the customer pays on top of the service (0 for taxi).
+  final double travelAllowance;
+
+  /// Tendo Taxi fare (paid separately through the taxi booking; shown for transparency).
+  final double taxiFare;
+
+  final int? linkedTaxiOrderId;
+
+  /// Total Assist cash payable: service total + own-vehicle travel allowance.
+  /// The taxi fare is NOT included here — it is paid through the taxi booking.
+  final double totalPayable;
 
   factory AssistInvoice.fromJson(dynamic json) => AssistInvoice(
     locked: json["locked"] == true,
@@ -106,5 +127,14 @@ class AssistInvoice {
                 (x) => AssistMaterialItem.fromJson(x),
               ),
             ),
+    transportMode: json["transport_mode"]?.toString(),
+    travelAllowance: _toDouble(json["travel_allowance"]),
+    taxiFare: _toDouble(json["taxi_fare"]),
+    linkedTaxiOrderId: json["linked_taxi_order_id"] == null
+        ? null
+        : int.tryParse("${json["linked_taxi_order_id"]}"),
+    totalPayable: json["total_payable"] == null
+        ? _toDouble(json["total"])
+        : _toDouble(json["total_payable"]),
   );
 }

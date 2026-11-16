@@ -16,6 +16,22 @@ class ServiceProviderSection extends StatelessWidget {
   //
   @override
   Widget build(BuildContext context) {
+    final vendor = service.vendor;
+    // Canonical catalogue service with no assigned provider yet.
+    if (vendor == null) {
+      return VStack(
+        [
+          "Provider".tr().text.medium.xl.make(),
+          "A verified provider will be assigned after you request this service."
+              .tr()
+              .text
+              .light
+              .sm
+              .make(),
+        ],
+        spacing: 6,
+      );
+    }
     return VStack(
       [
         "Provider".tr().text.medium.xl.make(),
@@ -23,16 +39,16 @@ class ServiceProviderSection extends StatelessWidget {
           [
             //provider logo
             CustomImage(
-              imageUrl: service.vendor.logo,
+              imageUrl: vendor.logo,
               width: 50,
               height: 50,
             ).box.roundedSM.clip(Clip.antiAlias).make(),
             //provider details
             VStack(
               [
-                service.vendor.name.text.semiBold.lg.make(),
-                "${service.vendor.phone}".text.medium.sm.make(),
-                "${service.vendor.address}".text.light.sm.maxLines(1).make(),
+                vendor.name.text.semiBold.lg.make(),
+                "${vendor.phone}".text.medium.sm.make(),
+                "${vendor.address}".text.light.sm.maxLines(1).make(),
               ],
             ).px12().expand(),
           ],
@@ -46,7 +62,7 @@ class ServiceProviderSection extends StatelessWidget {
           () {
             Navigator.of(context).pushNamed(
               AppRoutes.vendorDetails,
-              arguments: service.vendor,
+              arguments: vendor,
             );
           },
         ),

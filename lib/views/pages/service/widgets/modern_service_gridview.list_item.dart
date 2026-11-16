@@ -38,12 +38,27 @@ class ModernServiceGridviewListItem extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(Sizes.radiusSmall),
-              child: CustomImage(
-                imageUrl: service.photos.first,
-                width: double.infinity,
-                height: 80,
-                boxFit: BoxFit.cover,
-              ),
+              child:
+                  service.photos.isNotEmpty
+                      ? CustomImage(
+                        imageUrl: service.photos.first,
+                        width: double.infinity,
+                        height: 80,
+                        boxFit: BoxFit.cover,
+                      )
+                      : Container(
+                        width: double.infinity,
+                        height: 80,
+                        alignment: Alignment.center,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.08),
+                        child: Icon(
+                          Icons.home_repair_service,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 28,
+                        ),
+                      ),
             ),
             SizedBox(height: 12),
             service.name.text
@@ -55,18 +70,22 @@ class ModernServiceGridviewListItem extends StatelessWidget {
 
             SizedBox(height: 4),
             Text(
-              'by %s'.tr().fill([service.vendor.name]),
+              service.vendor == null
+                  ? 'Tendo Assist'.tr()
+                  : 'by %s'.tr().fill([service.vendor!.name]),
               style: TextStyle(fontSize: 12),
             ),
             Spacer(),
             Row(
               children: [
-                Icon(Icons.star, color: Colors.amber, size: 14),
-                SizedBox(width: 4),
-                Text(
-                  "${service.vendor.rating}",
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                ),
+                if (service.vendor != null) ...[
+                  Icon(Icons.star, color: Colors.amber, size: 14),
+                  SizedBox(width: 4),
+                  Text(
+                    "${service.vendor!.rating}",
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                  ),
+                ],
                 Spacer(),
                 Text(
                   "${AppStrings.currentCurrencySymbol} ${service.sellPrice.convertCurrency}"

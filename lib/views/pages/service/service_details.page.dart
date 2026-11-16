@@ -100,30 +100,61 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            PageView.builder(
-              itemCount: widget.service.photos.length,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentImageIndex = index;
-                });
-              },
-              itemBuilder: (context, index) {
-                return CachedNetworkImage(
-                  imageUrl: widget.service.photos[index],
-                  fit: BoxFit.cover,
-                  placeholder:
-                      (context, url) => Container(
-                        color: Colors.grey[300],
-                        child: const Center(child: CircularProgressIndicator()),
+            if (widget.service.photos.isEmpty)
+              // Canonical catalogue service with no photo: show a branded placeholder.
+              Container(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.home_repair_service,
+                      size: 56,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(
+                        widget.service.name,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                  errorWidget:
-                      (context, url, error) => Container(
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.error),
-                      ),
-                );
-              },
-            ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              PageView.builder(
+                itemCount: widget.service.photos.length,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentImageIndex = index;
+                  });
+                },
+                itemBuilder: (context, index) {
+                  return CachedNetworkImage(
+                    imageUrl: widget.service.photos[index],
+                    fit: BoxFit.cover,
+                    placeholder:
+                        (context, url) => Container(
+                          color: Colors.grey[300],
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                    errorWidget:
+                        (context, url, error) => Container(
+                          color: Colors.grey[300],
+                          child: const Icon(Icons.error),
+                        ),
+                  );
+                },
+              ),
             if (widget.service.photos.length > 1)
               Positioned(
                 bottom: 16,
@@ -364,6 +395,39 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
   }
 
   Widget _buildVendorSection(ServiceDetailsViewModel vm) {
+    // Canonical catalogue services have no single provider yet; Tendo assigns one
+    // after the request. Show an assurance note instead of a provider card.
+    final vendor = widget.service.vendor;
+    if (vendor == null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.verified_user_outlined, color: Colors.green),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'A verified provider will be assigned after you request this service.'
+                    .tr(),
+                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -386,7 +450,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: CachedNetworkImage(
-                  imageUrl: widget.service.vendor.logo,
+                  imageUrl: vendor.logo,
                   width: 60,
                   height: 60,
                   fit: BoxFit.cover,
@@ -411,7 +475,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.service.vendor.name,
+                      vendor.name,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -423,7 +487,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                         Icon(Icons.star, color: AppColor.ratingColor, size: 16),
                         const SizedBox(width: 4),
                         Text(
-                          widget.service.vendor.rating.toStringAsFixed(1),
+                          vendor.rating.toStringAsFixed(1),
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -435,7 +499,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                           height: 8,
                           decoration: BoxDecoration(
                             color:
-                                widget.service.vendor.isOpen
+                                vendor.isOpen
                                     ? AppColor.openColor
                                     : AppColor.closeColor,
                             shape: BoxShape.circle,
@@ -443,13 +507,13 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          widget.service.vendor.isOpen
+                          vendor.isOpen
                               ? 'Open'.tr()
                               : 'Closed'.tr(),
                           style: TextStyle(
                             fontSize: 12,
                             color:
-                                widget.service.vendor.isOpen
+                                vendor.isOpen
                                     ? AppColor.openColor.swatch.shade700
                                     : AppColor.closeColor.swatch.shade700,
                             fontWeight: FontWeight.w500,
@@ -470,7 +534,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
           ),
           const SizedBox(height: 12),
           Text(
-            widget.service.vendor.description,
+            vendor.description,
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[600],
@@ -480,12 +544,12 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
           const SizedBox(height: 12),
           Row(
             children: [
-              if (widget.service.vendor.pickup == 1)
+              if (vendor.pickup == 1)
                 _buildVendorFeature(
                   HugeIcons.strokeRoundedOffice,
                   'On-site Service'.tr(),
                 ),
-              if (widget.service.vendor.delivery == 1)
+              if (vendor.delivery == 1)
                 _buildVendorFeature(
                   HugeIcons.strokeRoundedLocation03,
                   'Off-site Service'.tr(),
