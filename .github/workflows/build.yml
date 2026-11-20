@@ -2,7 +2,7 @@ name: Build Release APK
 on:
   workflow_dispatch:
   push:
-    branches: [main, "fix/assist-catalogue-null-vendor"]
+    branches: [main, "fix/assist-catalogue-null-vendor", "feature/shared-rides-customer"]
 jobs:
   build:
     runs-on: ubuntu-latest
