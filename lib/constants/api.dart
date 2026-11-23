@@ -94,6 +94,7 @@ class Api {
   //Shared Rides (feature-gated server-side; disabled by default)
   static const sharedRideQuote = "/taxi/shared/quote";
   static const sharedRideBook = "/taxi/shared/book";
+  static const sharedRideTrip = "/taxi/shared/trip"; // /{id}/status
   // append /{passengerId}/cancel
   static const sharedRidePassenger = "/taxi/shared/passenger";
 

@@ -2,6 +2,7 @@ import 'package:fuodz/constants/api.dart';
 import 'package:fuodz/models/api_response.dart';
 import 'package:fuodz/models/delivery_address.dart';
 import 'package:fuodz/models/shared_ride.dart';
+import 'package:fuodz/models/shared_trip_status.dart';
 import 'package:fuodz/services/http.service.dart';
 
 /// SHARED RIDES — customer API. All calls are server-authoritative; the backend
@@ -130,6 +131,21 @@ class SharedRideRequest extends HttpService {
       return booking;
     }
     throw apiResponse.message ?? "Shared booking failed";
+  }
+
+  /// Poll the dispatch outcome for a trip the customer booked onto
+  /// (searching | assigned | no_driver). Server-authoritative; restricted to a
+  /// rider on that trip. Returns `searching` on any transient read failure so the
+  /// UI keeps waiting rather than falsely reporting no driver.
+  Future<SharedTripStatus> tripStatus(int tripId) async {
+    try {
+      final apiResult = await get("${Api.sharedRideTrip}/$tripId/status");
+      final apiResponse = ApiResponse.fromResponse(apiResult);
+      if (apiResponse.body is Map) {
+        return SharedTripStatus.fromJson(Map<String, dynamic>.from(apiResponse.body));
+      }
+    } catch (_) {}
+    return SharedTripStatus(outcome: "searching");
   }
 
   /// Customer cancels their own seat (frees it; no charge was raised).

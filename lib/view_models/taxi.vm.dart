@@ -14,6 +14,8 @@ import 'package:fuodz/requests/payment_method.request.dart';
 import 'package:fuodz/requests/taxi.request.dart';
 import 'package:fuodz/requests/shared_ride.request.dart';
 import 'package:fuodz/models/shared_ride.dart';
+import 'package:fuodz/models/shared_trip_status.dart';
+import 'package:fuodz/services/shared_status.service.dart';
 import 'package:fuodz/enums/ride_type.enum.dart';
 import 'package:fuodz/constants/app_taxi_settings.dart';
 import 'package:fuodz/services/alert.service.dart';
@@ -53,6 +55,11 @@ class TaxiViewModel extends TripTaxiViewModel {
   SharedRideRequest sharedRequest = SharedRideRequest();
   RideType rideType = RideType.private;
   SharedRideQuote? sharedQuote;
+  // SHARED RIDES: live dispatch outcome for the booked trip (searching | assigned | no_driver).
+  String sharedOutcome = "";
+  bool get sharedSearching => sharedOutcome == "searching";
+  bool get sharedNoDriver => sharedOutcome == "no_driver";
+  bool get sharedDriverAssigned => sharedOutcome == "assigned";
 
   //functions
   void initialise() async {
@@ -276,6 +283,9 @@ class TaxiViewModel extends TripTaxiViewModel {
         paymentMethodId: selectedPaymentMethod!.id,
       );
       setBusy(false);
+      // Enter the searching state and poll the backend for the dispatch outcome.
+      sharedOutcome = "searching";
+      _trackSharedStatus(booking.sharedTripId);
       if (booking.order != null) {
         onGoingOrderTrip = booking.order;
         startHandlingOnGoingTrip();
@@ -294,6 +304,35 @@ class TaxiViewModel extends TripTaxiViewModel {
         title: "Shared booking failed".tr(),
         text: "$error",
       );
+    }
+  }
+
+  // SHARED RIDES: poll the backend for the dispatch outcome (searching | assigned
+  // | no_driver). The service polls on an interval and is nudged by push + resume.
+  void _trackSharedStatus(int? tripId) {
+    if (tripId == null) return;
+    SharedStatusService().track(tripId, _onSharedStatus);
+  }
+
+  void _onSharedStatus(SharedTripStatus status) {
+    final changed = sharedOutcome != status.outcome;
+    sharedOutcome = status.outcome;
+    notifyListeners();
+    if (!changed) return; // only act on an outcome transition
+    if (status.isAssigned) {
+      // Driver accepted — the existing ongoing-trip UI surfaces the driver as
+      // the order updates; confirm it to the customer.
+      AlertService.success(
+        title: "Driver assigned".tr(),
+        text: "A driver is on the way for your shared trip.".tr(),
+      );
+    } else if (status.isNoDriver) {
+      SharedStatusService().stop();
+      AlertService.error(
+        title: "No driver available".tr(),
+        text: "Sorry, no driver was available for your shared trip.".tr(),
+      );
+      closeOrderSummary();
     }
   }
 
