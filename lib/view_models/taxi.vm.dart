@@ -12,6 +12,10 @@ import 'package:fuodz/models/vendor_type.dart';
 import 'package:fuodz/requests/cart.request.dart';
 import 'package:fuodz/requests/payment_method.request.dart';
 import 'package:fuodz/requests/taxi.request.dart';
+import 'package:fuodz/requests/shared_ride.request.dart';
+import 'package:fuodz/models/shared_ride.dart';
+import 'package:fuodz/enums/ride_type.enum.dart';
+import 'package:fuodz/constants/app_taxi_settings.dart';
 import 'package:fuodz/services/alert.service.dart';
 import 'package:fuodz/services/chat.service.dart';
 import 'package:fuodz/services/location.service.dart';
@@ -44,6 +48,11 @@ class TaxiViewModel extends TripTaxiViewModel {
   double subTotal = 0.0;
   double total = 0.0;
   double tip = 0.0;
+
+  // SHARED RIDES (additive, flag-gated) state
+  SharedRideRequest sharedRequest = SharedRideRequest();
+  RideType rideType = RideType.private;
+  SharedRideQuote? sharedQuote;
 
   //functions
   void initialise() async {
@@ -212,8 +221,91 @@ class TaxiViewModel extends TripTaxiViewModel {
     setBusy(false);
   }
 
+  // ===== SHARED RIDES (additive, flag-gated) =====
+  bool get sharedRidesAvailable => AppTaxiSettings.sharedRidesEnabled;
+
+  void selectRideType(RideType type) {
+    rideType = type;
+    notifyListeners();
+    if (type == RideType.shared &&
+        sharedRidesAvailable &&
+        pickupLocation != null &&
+        dropoffLocation != null &&
+        selectedVehicleType != null) {
+      fetchSharedQuote();
+    }
+  }
+
+  Future<void> fetchSharedQuote() async {
+    if (selectedVehicleType == null) return;
+    setBusyForObject("sharedQuote", true);
+    try {
+      sharedQuote = await sharedRequest.quoteRaw(
+        pickupLat: (pickupLocation?.latitude ?? 0).toDouble(),
+        pickupLng: (pickupLocation?.longitude ?? 0).toDouble(),
+        dropoffLat: (dropoffLocation?.latitude ?? 0).toDouble(),
+        dropoffLng: (dropoffLocation?.longitude ?? 0).toDouble(),
+        vehicleTypeId: selectedVehicleType!.id,
+      );
+    } catch (error) {
+      print("Shared quote error ==> $error");
+      sharedQuote = null;
+    }
+    setBusyForObject("sharedQuote", false);
+    notifyListeners();
+  }
+
+  processSharedOrder() async {
+    if (selectedVehicleType == null || selectedPaymentMethod == null) {
+      AlertService.error(
+        title: "Shared ride".tr(),
+        text: "Please select a vehicle type and payment method".tr(),
+      );
+      return;
+    }
+    setBusy(true);
+    try {
+      final booking = await sharedRequest.bookRaw(
+        pickupLat: (pickupLocation?.latitude ?? 0).toDouble(),
+        pickupLng: (pickupLocation?.longitude ?? 0).toDouble(),
+        pickupAddress: pickupLocation?.address,
+        dropoffLat: (dropoffLocation?.latitude ?? 0).toDouble(),
+        dropoffLng: (dropoffLocation?.longitude ?? 0).toDouble(),
+        dropoffAddress: dropoffLocation?.address,
+        vehicleTypeId: selectedVehicleType!.id,
+        paymentMethodId: selectedPaymentMethod!.id,
+      );
+      setBusy(false);
+      if (booking.order != null) {
+        onGoingOrderTrip = booking.order;
+        startHandlingOnGoingTrip();
+      } else {
+        AlertService.success(
+          title: "Shared ride requested".tr(),
+          text: booking.pooled
+              ? "You've been added to a shared trip".tr()
+              : "Looking for a shared trip".tr(),
+        );
+        closeOrderSummary();
+      }
+    } catch (error) {
+      setBusy(false);
+      AlertService.error(
+        title: "Shared booking failed".tr(),
+        text: "$error",
+      );
+    }
+  }
+
   //
   processNewOrder() async {
+    // SHARED RIDES (additive, flag-gated): when the backend feature is ON AND
+    // the customer explicitly chose Shared, route to the shared booking path.
+    // When the flag is off (default) this guard is false, so the private-taxi
+    // path below runs byte-for-byte unchanged.
+    if (sharedRidesAvailable && rideType == RideType.shared) {
+      return processSharedOrder();
+    }
     //
     final params = {
       "payment_method_id": selectedPaymentMethod?.id,
