@@ -10,6 +10,7 @@ import 'package:fuodz/constants/app_strings.dart';
 import 'package:fuodz/models/shared_trip_status.dart';
 import 'package:fuodz/requests/shared_ride.request.dart';
 import 'package:fuodz/services/alert.service.dart';
+import 'package:fuodz/services/order_driver_location_websocket.service.dart';
 import 'package:fuodz/view_models/base.view_model.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
@@ -71,6 +72,11 @@ class SharedRideTrackingViewModel extends MyBaseViewModel {
   void dispose() {
     _pollTimer?.cancel();
     _driverLocationStream?.cancel();
+    if (AppStrings.useWebsocketAssignment) {
+      try {
+        OrderDriverLocationWebsocketService().disconnect();
+      } catch (_) {}
+    }
     super.dispose();
   }
 
@@ -161,29 +167,58 @@ class SharedRideTrackingViewModel extends MyBaseViewModel {
     }
   }
 
-  // ---- live driver location (Firestore, keyed by driver id) -------------
+  // ---- live driver location --------------------------------------------
+  // Mirrors the EXISTING private-taxi active-trip tracking (trip_taxi.vm): the
+  // transport depends on the same server setting the driver app writes with.
+  //   useWebsocketAssignment == true  -> Reverb private channel
+  //                                      drivers.{driverId}.location.updated
+  //   useWebsocketAssignment == false -> Firestore drivers/{driverId}
+  // This guarantees the customer reads from whichever source the driver is
+  // actually publishing to, with no backend change.
   void _subscribeToDriverLocation(SharedTripStatus s) {
     final driverId = s.driver?.id ?? s.driverId;
     if (driverId == null) return;
     if (_subscribedDriverId == "$driverId") return; // already listening
     _subscribedDriverId = "$driverId";
-    _driverLocationStream?.cancel();
-    _driverLocationStream = _firestore
-        .collection("drivers")
-        .doc("$driverId")
-        .snapshots()
-        .listen((event) async {
-      final data = event.data();
-      if (data == null) return;
-      final lat = (data["lat"] as num?)?.toDouble();
-      final lng = (data["long"] as num?)?.toDouble() ??
-          (data["lng"] as num?)?.toDouble();
-      if (lat == null || lng == null) return;
-      driverLatLng = LatLng(lat, lng);
-      await _updateDriverMarker();
-      notifyListeners();
-      _fitCamera();
-    });
+
+    if (AppStrings.useWebsocketAssignment) {
+      OrderDriverLocationWebsocketService().connectToDriverLocationChannel(
+        "$driverId",
+        (data) async {
+          final lat = _num(data is Map ? data["lat"] : null);
+          final lng = _num(data is Map ? (data["long"] ?? data["lng"]) : null);
+          if (lat == null || lng == null) return;
+          driverLatLng = LatLng(lat, lng);
+          await _updateDriverMarker();
+          notifyListeners();
+          _fitCamera();
+        },
+      );
+    } else {
+      _driverLocationStream?.cancel();
+      _driverLocationStream = _firestore
+          .collection("drivers")
+          .doc("$driverId")
+          .snapshots()
+          .listen((event) async {
+        if (!event.exists) return;
+        final data = event.data();
+        if (data == null) return;
+        final lat = _num(data["lat"]);
+        final lng = _num(data["long"] ?? data["lng"]);
+        if (lat == null || lng == null) return;
+        driverLatLng = LatLng(lat, lng);
+        await _updateDriverMarker();
+        notifyListeners();
+        _fitCamera();
+      });
+    }
+  }
+
+  static double? _num(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    return double.tryParse(v.toString());
   }
 
   Future<void> _updateDriverMarker() async {
