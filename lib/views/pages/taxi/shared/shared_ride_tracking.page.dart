@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_icons/flutter_icons.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:fuodz/constants/app_colors.dart';
+import 'package:fuodz/constants/app_strings.dart';
 import 'package:fuodz/constants/app_ui_settings.dart';
+import 'package:fuodz/utils/ui_spacer.dart';
 import 'package:fuodz/view_models/shared_ride_tracking.vm.dart';
 import 'package:fuodz/widgets/base.page.dart';
 import 'package:fuodz/widgets/buttons/custom_button.dart';
+import 'package:fuodz/widgets/buttons/custom_text_button.dart';
 import 'package:fuodz/widgets/custom_image.view.dart';
+import 'package:fuodz/widgets/custom_text_form_field.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:localize_and_translate/localize_and_translate.dart';
 import 'package:stacked/stacked.dart';
@@ -47,7 +52,7 @@ class SharedRideTrackingPage extends StatelessWidget {
                 onMapCreated: vm.setMapController,
               ),
 
-              // status + driver card
+              // status + driver card + cancel
               Positioned(
                 left: 0,
                 right: 0,
@@ -56,13 +61,41 @@ class SharedRideTrackingPage extends StatelessWidget {
                   child: VStack([
                     _statusBanner(context, vm),
                     if (vm.driver != null) _driverCard(context, vm),
+                    if (vm.canCancel) _cancelButton(context, vm),
                   ], spacing: 8).p12(),
                 ),
               ),
+
+              // completion bill + rating overlay
+              if (vm.isCompleted && !vm.ratingSubmitted)
+                _completionOverlay(context, vm),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _cancelButton(BuildContext context, SharedRideTrackingViewModel vm) {
+    return CustomButton(
+      title: "Cancel ride".tr(),
+      color: Colors.red.shade50,
+      titleStyle: const TextStyle(
+        color: Colors.red,
+        fontWeight: FontWeight.w600,
+      ),
+      loading: vm.cancelling,
+      onPressed: vm.cancelTrip,
+    ).wFull(context);
+  }
+
+  // ---- completion: bill + rate the driver ------------------------------
+  Widget _completionOverlay(BuildContext context, SharedRideTrackingViewModel vm) {
+    return Container(
+      color: Colors.black.withOpacity(0.45),
+      child: Center(
+        child: _SharedCompletionSheet(vm: vm),
+      ),
     );
   }
 
@@ -134,4 +167,124 @@ class SharedRideTrackingPage extends StatelessWidget {
         .make()
         .wFull(context);
   }
+}
+
+/// Completion bill + rate-the-driver sheet, shown when the customer's shared
+/// leg is dropped / the trip completed. Reuses the existing rateDriver endpoint
+/// via the view model; it never runs any payment itself (the fare was settled
+/// server-side on completion).
+class _SharedCompletionSheet extends StatefulWidget {
+  const _SharedCompletionSheet({required this.vm, Key? key}) : super(key: key);
+  final SharedRideTrackingViewModel vm;
+
+  @override
+  State<_SharedCompletionSheet> createState() => _SharedCompletionSheetState();
+}
+
+class _SharedCompletionSheetState extends State<_SharedCompletionSheet> {
+  double _stars = 5;
+  final TextEditingController _review = TextEditingController();
+
+  @override
+  void dispose() {
+    _review.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = widget.vm;
+    final driver = vm.driver;
+    final fare = vm.fareAmount;
+    final content = VStack([
+      HStack([
+        "Trip completed".tr().text.xl2.semiBold.make().expand(),
+        Icon(Icons.check_circle, color: Colors.green, size: 28),
+      ]),
+      UiDivider(),
+      // fare / bill
+      if (driver != null)
+        HStack([
+          CustomImage(imageUrl: driver.photo ?? "")
+              .wh(44, 44)
+              .box
+              .roundedFull
+              .clip(Clip.antiAlias)
+              .make(),
+          VStack([
+            (driver.name ?? "Driver".tr()).text.semiBold.make(),
+            if ((driver.vehicle?.summary ?? "").isNotEmpty)
+              driver.vehicle!.summary.text.sm.gray600.make(),
+          ], spacing: 2).px10().expand(),
+        ]).py8(),
+      Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColor.primaryColor.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: HStack([
+          "Fare".tr().text.lg.make().expand(),
+          "${AppStrings.currencySymbol} ${fare.toStringAsFixed(2)}"
+              .text
+              .xl2
+              .bold
+              .color(AppColor.primaryColor)
+              .make(),
+        ]),
+      ),
+      UiSpacer.vSpace(14),
+      "Rate your driver".tr().text.lg.semiBold.makeCentered(),
+      RatingBar.builder(
+        initialRating: 5,
+        minRating: 1,
+        direction: Axis.horizontal,
+        allowHalfRating: false,
+        itemCount: 5,
+        itemSize: 34,
+        itemBuilder: (context, _) =>
+            Icon(Icons.star, color: Colors.amber),
+        onRatingUpdate: (r) => _stars = r,
+      ).centered().py8(),
+      CustomTextFormField(
+        hintText: "Add a review (optional)".tr(),
+        textEditingController: _review,
+        minLines: 2,
+        maxLines: 4,
+      ),
+      UiSpacer.vSpace(12),
+      CustomButton(
+        title: "Submit".tr(),
+        loading: vm.submittingRating,
+        onPressed: () async {
+          await vm.submitRating(_stars, _review.text.trim());
+          if (vm.ratingSubmitted) vm.finishAfterRating();
+        },
+      ).wFull(context),
+      CustomTextButton(
+        title: "Skip".tr(),
+        onPressed: vm.finishAfterRating,
+      ).wFull(context),
+    ], spacing: 8);
+
+    return Container(
+      margin: const EdgeInsets.all(16),
+      constraints: BoxConstraints(maxHeight: context.screenHeight * 0.85),
+      decoration: BoxDecoration(
+        color: context.theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: SingleChildScrollView(
+        child: Padding(padding: const EdgeInsets.all(20), child: content),
+      ),
+    );
+  }
+}
+
+/// Simple full-width divider used in the completion sheet.
+class UiDivider extends StatelessWidget {
+  const UiDivider({Key? key}) : super(key: key);
+  @override
+  Widget build(BuildContext context) =>
+      Divider(color: Colors.grey.shade300, height: 16);
 }

@@ -138,8 +138,10 @@ class SharedTripVehicle {
 /// status drives the approach/pickup/arrival messaging.
 class SharedTripMe {
   final int? passengerId;
+  final int? orderId;
   final String? status;
   final int? seatCount;
+  final double? passengerFare;
   final double? pickupLatitude;
   final double? pickupLongitude;
   final double? dropoffLatitude;
@@ -147,8 +149,10 @@ class SharedTripMe {
 
   SharedTripMe({
     this.passengerId,
+    this.orderId,
     this.status,
     this.seatCount,
+    this.passengerFare,
     this.pickupLatitude,
     this.pickupLongitude,
     this.dropoffLatitude,
@@ -159,8 +163,10 @@ class SharedTripMe {
     final j = json ?? {};
     return SharedTripMe(
       passengerId: SharedTripStatus._in(j["passenger_id"]),
+      orderId: SharedTripStatus._in(j["order_id"]),
       status: j["status"]?.toString(),
       seatCount: SharedTripStatus._in(j["seat_count"]),
+      passengerFare: SharedTripStatus._dn(j["passenger_fare"]),
       pickupLatitude: SharedTripStatus._dn(j["pickup_latitude"]),
       pickupLongitude: SharedTripStatus._dn(j["pickup_longitude"]),
       dropoffLatitude: SharedTripStatus._dn(j["dropoff_latitude"]),

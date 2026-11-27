@@ -9,6 +9,7 @@ import 'package:fuodz/constants/app_images.dart';
 import 'package:fuodz/constants/app_strings.dart';
 import 'package:fuodz/models/shared_trip_status.dart';
 import 'package:fuodz/requests/shared_ride.request.dart';
+import 'package:fuodz/requests/taxi.request.dart';
 import 'package:fuodz/services/alert.service.dart';
 import 'package:fuodz/services/order_driver_location_websocket.service.dart';
 import 'package:fuodz/view_models/base.view_model.dart';
@@ -38,12 +39,38 @@ class SharedRideTrackingViewModel extends MyBaseViewModel {
   final int tripId;
 
   final SharedRideRequest _request = SharedRideRequest();
+  final TaxiRequest _taxiRequest = TaxiRequest();
   Timer? _pollTimer;
   StreamSubscription? _driverLocationStream;
 
   SharedTripStatus? status;
   String? _lastLegStatus; // for transition notifications
   String? _subscribedDriverId;
+  bool _disposed = false;
+
+  // cancellation + completion/rating
+  bool cancelling = false;
+  bool ratingSubmitted = false;
+  bool submittingRating = false;
+
+  /// The customer's journey is finished (dropped off, or trip completed).
+  bool get isCompleted =>
+      status?.iAmDropped == true || status?.trip?.status == "completed";
+
+  /// Terminal without service (no driver found, or the trip was cancelled).
+  bool get isCancelledOrNoDriver =>
+      status?.isNoDriver == true || status?.isCancelled == true;
+
+  /// The customer may still cancel while the ride has not started/finished.
+  bool get canCancel {
+    final leg = status?.myLegStatus;
+    return !isCompleted &&
+        !isCancelledOrNoDriver &&
+        leg != "onboard" &&
+        leg != "dropped";
+  }
+
+  double get fareAmount => status?.me?.passengerFare ?? 0;
 
   // map
   GoogleMapController? controller;
@@ -70,14 +97,75 @@ class SharedRideTrackingViewModel extends MyBaseViewModel {
 
   @override
   void dispose() {
+    _disposed = true;
     _pollTimer?.cancel();
     _driverLocationStream?.cancel();
+    controller = null;
     if (AppStrings.useWebsocketAssignment) {
       try {
         OrderDriverLocationWebsocketService().disconnect();
       } catch (_) {}
     }
     super.dispose();
+  }
+
+  // ---- cancellation -----------------------------------------------------
+  /// Customer cancels their own leg (server-authoritative). No charge was
+  /// raised before onboard, so there is nothing to refund.
+  Future<void> cancelTrip() async {
+    final pid = status?.me?.passengerId;
+    if (pid == null || cancelling) return;
+    await AlertService.confirm(
+      title: "Cancel ride?".tr(),
+      text: "Are you sure you want to cancel this shared ride?".tr(),
+      confirmBtnText: "Yes, cancel".tr(),
+      onConfirm: () => _doCancel(pid),
+    );
+  }
+
+  Future<void> _doCancel(int pid) async {
+    if (cancelling) return;
+    cancelling = true;
+    notifyListeners();
+    try {
+      await _request.cancel(pid);
+      _pollTimer?.cancel();
+      AlertService.success(
+        title: "Ride cancelled".tr(),
+        text: "Your shared ride has been cancelled.".tr(),
+      );
+      if (!_disposed) viewContext.pop();
+    } catch (e) {
+      AlertService.error(title: "Couldn't cancel".tr(), text: "$e");
+    }
+    cancelling = false;
+    if (!_disposed) notifyListeners();
+  }
+
+  // ---- rating on completion --------------------------------------------
+  Future<void> submitRating(double stars, String review) async {
+    final orderId = status?.me?.orderId;
+    final driverId = status?.driver?.id ?? status?.driverId;
+    if (orderId == null || driverId == null || submittingRating) return;
+    submittingRating = true;
+    notifyListeners();
+    try {
+      await _taxiRequest.rateDriver(orderId, driverId, stars, review);
+      ratingSubmitted = true;
+      AlertService.success(
+        title: "Thank you!".tr(),
+        text: "Your rating has been submitted.".tr(),
+      );
+    } catch (e) {
+      AlertService.error(title: "Couldn't submit rating".tr(), text: "$e");
+    }
+    submittingRating = false;
+    if (!_disposed) notifyListeners();
+  }
+
+  void finishAfterRating() {
+    _pollTimer?.cancel();
+    if (!_disposed) viewContext.pop();
   }
 
   void setMapController(GoogleMapController c) {
@@ -87,8 +175,10 @@ class SharedRideTrackingViewModel extends MyBaseViewModel {
 
   // ---- polling ----------------------------------------------------------
   Future<void> _poll() async {
+    if (_disposed) return;
     try {
       final s = await _request.tripStatus(tripId);
+      if (_disposed) return;
       status = s;
       setBusy(false);
 
@@ -342,6 +432,7 @@ class SharedRideTrackingViewModel extends MyBaseViewModel {
 
   // ---- camera & helpers -------------------------------------------------
   void _fitCamera() {
+    if (_disposed || controller == null) return;
     final pts = <LatLng>[
       if (driverLatLng != null) driverLatLng!,
       if (pickupLatLng != null) pickupLatLng!,

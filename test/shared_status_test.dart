@@ -65,8 +65,10 @@ void main() {
       },
       'me': {
         'passenger_id': 9,
+        'order_id': 4321,
         'status': 'en_route',
         'seat_count': 1,
+        'passenger_fare': 42.5,
         'pickup_latitude': -15.38,
         'pickup_longitude': 28.32,
         'dropoff_latitude': -15.41,
@@ -99,6 +101,8 @@ void main() {
       final s = SharedTripStatus.fromJson(enriched);
       expect(s.me, isNotNull);
       expect(s.me!.passengerId, 9);
+      expect(s.me!.orderId, 4321);
+      expect(s.me!.passengerFare, closeTo(42.5, 1e-9));
       expect(s.myLegStatus, 'en_route');
       expect(s.driverEnRouteToMe, isTrue);
       expect(s.me!.hasPickup, isTrue);
