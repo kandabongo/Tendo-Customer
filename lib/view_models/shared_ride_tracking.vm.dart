@@ -57,9 +57,12 @@ class SharedRideTrackingViewModel extends MyBaseViewModel {
   bool get isCompleted =>
       status?.iAmDropped == true || status?.trip?.status == "completed";
 
-  /// Terminal without service (no driver found, or the trip was cancelled).
+  /// Terminal without service (no driver found, the trip was cancelled, or this
+  /// customer's own pooled leg was declined/timed out by the driver).
   bool get isCancelledOrNoDriver =>
-      status?.isNoDriver == true || status?.isCancelled == true;
+      status?.isNoDriver == true ||
+      status?.isCancelled == true ||
+      status?.myLegDeclined == true;
 
   /// The customer may still cancel while the ride has not started/finished.
   bool get canCancel {
@@ -189,8 +192,10 @@ class SharedRideTrackingViewModel extends MyBaseViewModel {
 
       notifyListeners();
 
-      // Stop polling only when the journey is truly over for this customer.
-      if (s.iAmDropped || s.isNoDriver || s.isCancelled ||
+      // Stop polling only when the journey is truly over for this customer
+      // (dropped, no driver, trip cancelled, trip completed, or this rider's own
+      // pooled leg was declined/timed out).
+      if (s.iAmDropped || s.isNoDriver || s.isCancelled || s.myLegDeclined ||
           s.trip?.status == "completed") {
         _pollTimer?.cancel();
       }
@@ -332,6 +337,7 @@ class SharedRideTrackingViewModel extends MyBaseViewModel {
     if (s == null) return "Loading…".tr();
     if (s.isSearching) return "Finding you a driver…".tr();
     if (s.isNoDriver) return "No driver available".tr();
+    if (s.myLegDeclined) return "Couldn't confirm a driver".tr();
     if (s.isCancelled) return "Trip cancelled".tr();
     switch (s.myLegStatus) {
       case "en_route":
@@ -340,8 +346,10 @@ class SharedRideTrackingViewModel extends MyBaseViewModel {
         return "You're on board".tr();
       case "dropped":
         return "You've arrived".tr();
-      case "accepted":
       case "offered":
+        // Pooled onto an active trip; the driver is confirming the request.
+        return "Confirming your driver…".tr();
+      case "accepted":
       default:
         return "Driver assigned".tr();
     }
@@ -351,6 +359,12 @@ class SharedRideTrackingViewModel extends MyBaseViewModel {
     final s = status;
     if (s == null) return "";
     if (s.isSearching) return "Hang tight — matching the nearest driver.".tr();
+    if (s.myLegDeclined) {
+      return "The driver couldn't take your ride. Please book again.".tr();
+    }
+    if (s.iAmPooledPending) {
+      return "A nearby driver is confirming your pickup.".tr();
+    }
     final eta = etaMinutes;
     if (s.myLegStatus == "en_route" && eta != null) {
       return "About $eta min away".tr();
