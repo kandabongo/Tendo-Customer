@@ -215,7 +215,7 @@ class _SharedCompletionSheetState extends State<_SharedCompletionSheet> {
             (driver.name ?? "Driver".tr()).text.semiBold.make(),
             if ((driver.vehicle?.summary ?? "").isNotEmpty)
               driver.vehicle!.summary.text.sm.gray600.make(),
-          ], spacing: 2).px10().expand(),
+          ], spacing: 2).px12().expand(),
         ]).py8(),
       Container(
         padding: const EdgeInsets.all(14),

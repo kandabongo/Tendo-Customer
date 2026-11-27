@@ -134,7 +134,7 @@ class SharedRideTrackingViewModel extends MyBaseViewModel {
         title: "Ride cancelled".tr(),
         text: "Your shared ride has been cancelled.".tr(),
       );
-      if (!_disposed) viewContext.pop();
+      if (!_disposed) Navigator.of(viewContext).pop();
     } catch (e) {
       AlertService.error(title: "Couldn't cancel".tr(), text: "$e");
     }
@@ -165,7 +165,7 @@ class SharedRideTrackingViewModel extends MyBaseViewModel {
 
   void finishAfterRating() {
     _pollTimer?.cancel();
-    if (!_disposed) viewContext.pop();
+    if (!_disposed) Navigator.of(viewContext).pop();
   }
 
   void setMapController(GoogleMapController c) {
