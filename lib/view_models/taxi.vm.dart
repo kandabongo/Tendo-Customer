@@ -25,6 +25,7 @@ import 'package:fuodz/services/trip.service.dart';
 import 'package:fuodz/view_models/trip_taxi.vm.dart';
 import 'package:localize_and_translate/localize_and_translate.dart';
 import 'package:velocity_x/velocity_x.dart';
+import 'package:fuodz/views/pages/taxi/shared/shared_ride_tracking.page.dart';
 
 class TaxiViewModel extends TripTaxiViewModel {
   //
@@ -283,20 +284,25 @@ class TaxiViewModel extends TripTaxiViewModel {
         paymentMethodId: selectedPaymentMethod!.id,
       );
       setBusy(false);
-      // Enter the searching state and poll the backend for the dispatch outcome.
       sharedOutcome = "searching";
-      _trackSharedStatus(booking.sharedTripId);
-      if (booking.order != null) {
-        onGoingOrderTrip = booking.order;
-        startHandlingOnGoingTrip();
+      closeOrderSummary();
+      // Open the dedicated Shared Ride tracking screen (live driver location,
+      // pickup/destination markers, driver details, ETA, server-authoritative
+      // status). The tracking screen owns its own polling, so we do NOT also
+      // start SharedStatusService here (that would double-poll /status).
+      // Falls back to a polled alert only if no trip id came back.
+      if (booking.sharedTripId != null) {
+        viewContext.nextPage(
+          SharedRideTrackingPage(tripId: booking.sharedTripId!),
+        );
       } else {
+        _trackSharedStatus(booking.sharedTripId);
         AlertService.success(
           title: "Shared ride requested".tr(),
           text: booking.pooled
               ? "You've been added to a shared trip".tr()
               : "Looking for a shared trip".tr(),
         );
-        closeOrderSummary();
       }
     } catch (error) {
       setBusy(false);
