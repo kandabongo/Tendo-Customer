@@ -434,10 +434,12 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
             Align(
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
-                onPressed: () => vm.viewContext.push(
-                  (context) => AssistServiceProvidersPage(
-                    serviceId: widget.service.id,
-                    serviceName: widget.service.name,
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => AssistServiceProvidersPage(
+                      serviceId: widget.service.id,
+                      serviceName: widget.service.name,
+                    ),
                   ),
                 ),
                 icon: const Icon(Icons.groups_outlined, size: 18),
