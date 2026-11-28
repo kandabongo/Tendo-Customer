@@ -8,7 +8,10 @@ class AppStrings {
   //
   static String get appName => env('app_name');
   static String get companyName => env('company_name');
-  static String get googleMapApiKey => env('google_maps_key');
+  // Null-coalesce: the production app-settings may omit google_maps_key; a null
+  // assigned into this non-nullable String getter throws "type 'Null' is not a
+  // subtype of type 'String'". "" keeps every caller safe.
+  static String get googleMapApiKey => env('google_maps_key') ?? "";
   static String get fcmApiKey => env('fcm_key');
   static String get currencySymbol => env('currency');
   static String get currencyCode => env('currency_code');
@@ -193,10 +196,11 @@ class AppStrings {
     //
     getAppSettingsFromLocalStorage();
     //
-    // Coalesce a missing/null setting to "" instead of null, so non-nullable
-    // String getters (e.g. googleMapApiKey) never throw "type 'Null' is not a
-    // subtype of type 'String'" when the backend app-settings omit a key.
-    return appSettingsObject != null ? (appSettingsObject[ref] ?? "") : "";
+    // NOTE: returns null for a present-but-null or a missing key. Callers that
+    // index/treat the result as a Map (e.g. env('map')["useGoogleOnApp"]) rely
+    // on that null, so do NOT coalesce to "" here. Non-nullable String getters
+    // instead null-coalesce individually (see googleMapApiKey).
+    return appSettingsObject != null ? appSettingsObject[ref] : "";
   }
 
   //
