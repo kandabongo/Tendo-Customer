@@ -70,6 +70,14 @@ class SharedTripStatus {
   bool get iAmOnboard => me?.status == "onboard";
   bool get iAmDropped => me?.status == "dropped";
   bool get driverEnRouteToMe => me?.status == "en_route";
+
+  /// Pooled onto an active trip and awaiting the driver's accept/decline.
+  bool get iAmPooledPending => me?.status == "offered";
+
+  /// This customer's OWN leg was declined by the driver or timed out (the trip
+  /// may still run for others). Distinct from a trip-level cancellation.
+  bool get myLegDeclined => me?.status == "rejected" ||
+      (me?.status == "cancelled" && !isCancelled);
 }
 
 /// Assigned driver + their vehicle. Null until a driver is assigned.

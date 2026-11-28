@@ -128,4 +128,40 @@ void main() {
       expect(s.myLegStatus, isNull);
     });
   });
+
+  group('SharedTripStatus — pooled leg states (driver consent)', () {
+    test('an offered leg is a pending pooled confirmation, not declined', () {
+      final s = SharedTripStatus.fromJson({
+        'outcome': 'assigned',
+        'trip_status': 'active',
+        'driver_id': 42,
+        'me': {'passenger_id': 9, 'status': 'offered'},
+      });
+      expect(s.iAmPooledPending, isTrue);
+      expect(s.myLegDeclined, isFalse);
+    });
+
+    test("a rejected own leg is declined even while the trip runs for others", () {
+      final s = SharedTripStatus.fromJson({
+        'outcome': 'assigned', // trip still active for other riders
+        'trip_status': 'active',
+        'driver_id': 42,
+        'me': {'passenger_id': 9, 'status': 'rejected'},
+      });
+      expect(s.myLegDeclined, isTrue);
+      expect(s.iAmPooledPending, isFalse);
+    });
+
+    test('a whole-trip cancellation is not misread as a per-leg decline', () {
+      final s = SharedTripStatus.fromJson({
+        'outcome': 'cancelled',
+        'trip_status': 'cancelled',
+        'me': {'passenger_id': 9, 'status': 'cancelled'},
+      });
+      // Trip-level cancel is handled by isCancelled; myLegDeclined stays false
+      // so the UI shows the trip-cancelled message, not the per-leg one.
+      expect(s.isCancelled, isTrue);
+      expect(s.myLegDeclined, isFalse);
+    });
+  });
 }
