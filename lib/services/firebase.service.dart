@@ -25,6 +25,7 @@ import 'package:fuodz/services/alert.service.dart';
 import 'package:fuodz/services/app.service.dart';
 import 'package:fuodz/services/chat.service.dart';
 import 'package:fuodz/services/notification.service.dart';
+import 'package:fuodz/services/shared_status.service.dart';
 import 'package:fuodz/services/toast.service.dart';
 import 'package:fuodz/views/pages/home.page.dart';
 import 'package:fuodz/views/pages/service/service_details.page.dart';
@@ -78,6 +79,7 @@ class FirebaseService {
       selectNotification("From onMessageOpenedApp");
       //
       refreshOrdersList(message);
+      SharedStatusService().onPush(message.data);
     });
 
     //normal notification listener
@@ -86,6 +88,7 @@ class FirebaseService {
       showNotification(message);
       //
       refreshOrdersList(message);
+      SharedStatusService().onPush(message.data);
     });
   }
 

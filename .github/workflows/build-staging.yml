@@ -1,0 +1,59 @@
+name: Build STAGING APK (Shared Rides QA)
+# Manual-only. Builds a customer APK pointed at a STAGING backend via --dart-define.
+# Never auto-triggers, never builds an AAB -> can never be mistaken for a Play upload.
+on:
+  workflow_dispatch:
+    inputs:
+      api_base_url:
+        description: "Staging API base URL, including /api (e.g. https://staging-api.letstwende.com/api)"
+        required: true
+        type: string
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/shared-rides-customer
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.47.0"
+          channel: "stable"
+      - name: Decode keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/keystore.jks
+      - name: Write key.properties
+        run: echo "${{ secrets.KEY_PROPERTIES }}" > android/key.properties
+      - name: Write google-services.json
+        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Run Shared Rides Dart tests
+        run: flutter test test/shared_ride_model_test.dart
+      - name: Build STAGING release APK (points at staging via --dart-define)
+        run: flutter build apk --release --dart-define=api=${{ inputs.api_base_url }}
+      - name: Confirm the staging URL baked into this build
+        run: echo "This APK targets ${{ inputs.api_base_url }}" | tee -a $GITHUB_STEP_SUMMARY
+      - name: Publish STAGING APK (QA sideload only)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: staging-customer-${{ github.run_number }}
+          name: "STAGING Customer - Shared Rides QA (build ${{ github.run_number }})"
+          body: |
+            ⚠️ STAGING BUILD — DO NOT UPLOAD TO GOOGLE PLAY.
+            This APK is pointed at: ${{ inputs.api_base_url }}
+            For sideloading onto dedicated QA test devices only.
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+      - name: Upload STAGING APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: customer-staging-apk
+          path: build/app/outputs/flutter-apk/app-release.apk

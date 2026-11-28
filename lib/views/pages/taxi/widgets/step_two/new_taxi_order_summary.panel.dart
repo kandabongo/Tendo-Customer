@@ -5,6 +5,9 @@ import 'package:fuodz/view_models/taxi_new_order_summary.vm.dart';
 import 'package:fuodz/views/pages/taxi/widgets/order_taxi.button.dart';
 import 'package:fuodz/views/pages/taxi/widgets/step_two/new_taxi_order_payment_method.selection_view.dart';
 import 'package:fuodz/views/pages/taxi/widgets/step_two/new_taxi_order_vehicle_type.list_view.dart';
+import 'package:fuodz/views/pages/taxi/widgets/shared/ride_type_selector.dart';
+import 'package:fuodz/views/pages/taxi/widgets/shared/shared_ride_fare_view.dart';
+import 'package:fuodz/enums/ride_type.enum.dart';
 import 'package:fuodz/views/pages/taxi/widgets/taxi_discount_section.dart';
 import 'package:fuodz/widgets/buttons/custom_text_button.dart';
 import 'package:localize_and_translate/localize_and_translate.dart';
@@ -50,6 +53,21 @@ class NewTaxiOrderSummaryPanel extends StatelessWidget {
                 ],
               ),
               UiSpacer.verticalSpace(),
+              // SHARED RIDES (additive, flag-gated): Private/Shared selector +
+              // transparent fare. Hidden entirely when the backend flag is off,
+              // so the private-taxi layout is unchanged by default.
+              if (vm.sharedRidesAvailable) ...[
+                RideTypeSelector(
+                  selected: vm.rideType,
+                  onChanged: vm.selectRideType,
+                ),
+                if (vm.rideType == RideType.shared && vm.sharedQuote != null)
+                  SharedRideFareView(
+                    fare: vm.sharedQuote!.fare,
+                    pooled: vm.sharedQuote!.poolable,
+                  ).py8(),
+                UiSpacer.vSpace(8),
+              ],
               //vehicle types
               TaxiVehicleTypeListView(vm: vm, min: false).expand(),
               UiSpacer.vSpace(),

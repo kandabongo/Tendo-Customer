@@ -12,6 +12,12 @@ import 'package:fuodz/models/vendor_type.dart';
 import 'package:fuodz/requests/cart.request.dart';
 import 'package:fuodz/requests/payment_method.request.dart';
 import 'package:fuodz/requests/taxi.request.dart';
+import 'package:fuodz/requests/shared_ride.request.dart';
+import 'package:fuodz/models/shared_ride.dart';
+import 'package:fuodz/models/shared_trip_status.dart';
+import 'package:fuodz/services/shared_status.service.dart';
+import 'package:fuodz/enums/ride_type.enum.dart';
+import 'package:fuodz/constants/app_taxi_settings.dart';
 import 'package:fuodz/services/alert.service.dart';
 import 'package:fuodz/services/chat.service.dart';
 import 'package:fuodz/services/location.service.dart';
@@ -19,6 +25,7 @@ import 'package:fuodz/services/trip.service.dart';
 import 'package:fuodz/view_models/trip_taxi.vm.dart';
 import 'package:localize_and_translate/localize_and_translate.dart';
 import 'package:velocity_x/velocity_x.dart';
+import 'package:fuodz/views/pages/taxi/shared/shared_ride_tracking.page.dart';
 
 class TaxiViewModel extends TripTaxiViewModel {
   //
@@ -44,6 +51,16 @@ class TaxiViewModel extends TripTaxiViewModel {
   double subTotal = 0.0;
   double total = 0.0;
   double tip = 0.0;
+
+  // SHARED RIDES (additive, flag-gated) state
+  SharedRideRequest sharedRequest = SharedRideRequest();
+  RideType rideType = RideType.private;
+  SharedRideQuote? sharedQuote;
+  // SHARED RIDES: live dispatch outcome for the booked trip (searching | assigned | no_driver).
+  String sharedOutcome = "";
+  bool get sharedSearching => sharedOutcome == "searching";
+  bool get sharedNoDriver => sharedOutcome == "no_driver";
+  bool get sharedDriverAssigned => sharedOutcome == "assigned";
 
   //functions
   void initialise() async {
@@ -212,8 +229,128 @@ class TaxiViewModel extends TripTaxiViewModel {
     setBusy(false);
   }
 
+  // ===== SHARED RIDES (additive, flag-gated) =====
+  bool get sharedRidesAvailable => AppTaxiSettings.sharedRidesEnabled;
+
+  void selectRideType(RideType type) {
+    rideType = type;
+    notifyListeners();
+    if (type == RideType.shared &&
+        sharedRidesAvailable &&
+        pickupLocation != null &&
+        dropoffLocation != null &&
+        selectedVehicleType != null) {
+      fetchSharedQuote();
+    }
+  }
+
+  Future<void> fetchSharedQuote() async {
+    if (selectedVehicleType == null) return;
+    setBusyForObject("sharedQuote", true);
+    try {
+      sharedQuote = await sharedRequest.quoteRaw(
+        pickupLat: (pickupLocation?.latitude ?? 0).toDouble(),
+        pickupLng: (pickupLocation?.longitude ?? 0).toDouble(),
+        dropoffLat: (dropoffLocation?.latitude ?? 0).toDouble(),
+        dropoffLng: (dropoffLocation?.longitude ?? 0).toDouble(),
+        vehicleTypeId: selectedVehicleType!.id,
+      );
+    } catch (error) {
+      print("Shared quote error ==> $error");
+      sharedQuote = null;
+    }
+    setBusyForObject("sharedQuote", false);
+    notifyListeners();
+  }
+
+  processSharedOrder() async {
+    if (selectedVehicleType == null || selectedPaymentMethod == null) {
+      AlertService.error(
+        title: "Shared ride".tr(),
+        text: "Please select a vehicle type and payment method".tr(),
+      );
+      return;
+    }
+    setBusy(true);
+    try {
+      final booking = await sharedRequest.bookRaw(
+        pickupLat: (pickupLocation?.latitude ?? 0).toDouble(),
+        pickupLng: (pickupLocation?.longitude ?? 0).toDouble(),
+        pickupAddress: pickupLocation?.address,
+        dropoffLat: (dropoffLocation?.latitude ?? 0).toDouble(),
+        dropoffLng: (dropoffLocation?.longitude ?? 0).toDouble(),
+        dropoffAddress: dropoffLocation?.address,
+        vehicleTypeId: selectedVehicleType!.id,
+        paymentMethodId: selectedPaymentMethod!.id,
+      );
+      setBusy(false);
+      sharedOutcome = "searching";
+      closeOrderSummary();
+      // Open the dedicated Shared Ride tracking screen (live driver location,
+      // pickup/destination markers, driver details, ETA, server-authoritative
+      // status). The tracking screen owns its own polling, so we do NOT also
+      // start SharedStatusService here (that would double-poll /status).
+      // Falls back to a polled alert only if no trip id came back.
+      if (booking.sharedTripId != null) {
+        viewContext.nextPage(
+          SharedRideTrackingPage(tripId: booking.sharedTripId!),
+        );
+      } else {
+        _trackSharedStatus(booking.sharedTripId);
+        AlertService.success(
+          title: "Shared ride requested".tr(),
+          text: booking.pooled
+              ? "You've been added to a shared trip".tr()
+              : "Looking for a shared trip".tr(),
+        );
+      }
+    } catch (error) {
+      setBusy(false);
+      AlertService.error(
+        title: "Shared booking failed".tr(),
+        text: "$error",
+      );
+    }
+  }
+
+  // SHARED RIDES: poll the backend for the dispatch outcome (searching | assigned
+  // | no_driver). The service polls on an interval and is nudged by push + resume.
+  void _trackSharedStatus(int? tripId) {
+    if (tripId == null) return;
+    SharedStatusService().track(tripId, _onSharedStatus);
+  }
+
+  void _onSharedStatus(SharedTripStatus status) {
+    final changed = sharedOutcome != status.outcome;
+    sharedOutcome = status.outcome;
+    notifyListeners();
+    if (!changed) return; // only act on an outcome transition
+    if (status.isAssigned) {
+      // Driver accepted — the existing ongoing-trip UI surfaces the driver as
+      // the order updates; confirm it to the customer.
+      AlertService.success(
+        title: "Driver assigned".tr(),
+        text: "A driver is on the way for your shared trip.".tr(),
+      );
+    } else if (status.isNoDriver) {
+      SharedStatusService().stop();
+      AlertService.error(
+        title: "No driver available".tr(),
+        text: "Sorry, no driver was available for your shared trip.".tr(),
+      );
+      closeOrderSummary();
+    }
+  }
+
   //
   processNewOrder() async {
+    // SHARED RIDES (additive, flag-gated): when the backend feature is ON AND
+    // the customer explicitly chose Shared, route to the shared booking path.
+    // When the flag is off (default) this guard is false, so the private-taxi
+    // path below runs byte-for-byte unchanged.
+    if (sharedRidesAvailable && rideType == RideType.shared) {
+      return processSharedOrder();
+    }
     //
     final params = {
       "payment_method_id": selectedPaymentMethod?.id,
