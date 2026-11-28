@@ -117,7 +117,11 @@ class DeliveryAddressPickerViewModel extends MyBaseViewModel {
         final addresses = await GeocoderService().findAddressesFromCoordinates(
           coordinates,
         );
-        deliveryAddress.city = addresses.first.locality;
+        // Guard against an empty reverse-geocode result (see note in
+        // location_fetch.view_model): never call .first on an empty list.
+        if (addresses.isNotEmpty) {
+          deliveryAddress.city = addresses.first.locality;
+        }
         setBusy(false);
       }
       //

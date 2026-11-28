@@ -389,9 +389,6 @@ class MyBaseViewModel extends BaseViewModel
   // NEW LOCATION PICKER
   Future<dynamic> newPlacePicker() async {
     try {
-      //TEMP DEBUG - proves the tap reached this method. Remove after testing.
-      toastError("DEBUG: opening map picker");
-
       //force a fresh, awaited location fetch if the background fetch from
       //app startup (home.page.dart) hasn't resolved yet - otherwise this
       //picker opens on Null Island at zoom 0 instead of the device's
@@ -414,6 +411,22 @@ class MyBaseViewModel extends BaseViewModel
           LocationService.currenctAddress?.coordinates?.longitude ?? 0.00,
         );
         initialZoom = 15;
+      } else {
+        // The reverse-geocode never resolved (e.g. the geocoder returned an
+        // empty result), so currenctAddress is null and the picker would open
+        // on "Null Island" (0,0) at zoom 0 - the default world view the user
+        // reported. Fall back to a RAW GPS fix so the map still centres on the
+        // device even when the address lookup failed. Best-effort + timeout so
+        // a slow/denied fix never hangs the picker.
+        try {
+          final pos = await Geolocator.getLastKnownPosition() ??
+              await Geolocator.getCurrentPosition()
+                  .timeout(const Duration(seconds: 8));
+          initialPosition = LatLng(pos.latitude, pos.longitude);
+          initialZoom = 15;
+        } catch (error) {
+          print("Raw GPS fallback for map picker failed ==> $error");
+        }
       }
       String? mapRegion;
       try {

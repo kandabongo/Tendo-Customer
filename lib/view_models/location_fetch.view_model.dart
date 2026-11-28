@@ -147,11 +147,21 @@ class LocationFetchViewModel extends MyBaseViewModel {
         final addresses = await GeocoderService().findAddressesFromCoordinates(
           coordinates,
         );
-        deliveryAddress.city = addresses.first.locality;
         setBusy(false);
+        // Guard: a reverse-geocode can legitimately return an empty list
+        // (no network, or no match for these coordinates). Calling .first on
+        // an empty list throws "Bad state: No element" and aborts the whole
+        // location flow (leaving the map stuck on the default world view).
+        // Fall back to the picked coordinates so the flow still completes.
+        if (addresses.isNotEmpty) {
+          deliveryAddress.city = addresses.first.locality;
+          LocationService.currenctAddressSubject.add(addresses.first);
+        } else {
+          print("findAddressesFromCoordinates returned empty for "
+              "${coordinates.latitude},${coordinates.longitude}; using raw coordinates");
+        }
         //
         LocationService.deliveryaddress = deliveryAddress;
-        LocationService.currenctAddressSubject.add(addresses.first);
       }
 
       loadNextPage();

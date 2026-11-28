@@ -87,7 +87,11 @@ class BaseDeliveryAddressesViewModel extends MyBaseViewModel {
       final addresses = await GeocoderService().findAddressesFromCoordinates(
         locationCoordinates,
       );
-      deliveryAddress?.city = addresses.first.locality;
+      // Guard against an empty reverse-geocode result: never call .first on an
+      // empty list ("Bad state: No element").
+      if (addresses.isNotEmpty) {
+        deliveryAddress?.city = addresses.first.locality;
+      }
       setBusy(false);
     } else {
       //
