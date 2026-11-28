@@ -193,7 +193,10 @@ class AppStrings {
     //
     getAppSettingsFromLocalStorage();
     //
-    return appSettingsObject != null ? appSettingsObject[ref] : "";
+    // Coalesce a missing/null setting to "" instead of null, so non-nullable
+    // String getters (e.g. googleMapApiKey) never throw "type 'Null' is not a
+    // subtype of type 'String'" when the backend app-settings omit a key.
+    return appSettingsObject != null ? (appSettingsObject[ref] ?? "") : "";
   }
 
   //
