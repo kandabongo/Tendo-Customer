@@ -10,6 +10,7 @@ import 'package:fuodz/services/app_currency_system.service.dart';
 import 'package:fuodz/utils/ui_spacer.dart';
 import 'package:fuodz/utils/utils.dart';
 import 'package:fuodz/view_models/service_details.vm.dart';
+import 'package:fuodz/views/pages/service/assist_service_providers.page.dart';
 import 'package:fuodz/widgets/busy_indicator.dart';
 import 'package:fuodz/widgets/buttons/qty_stepper.dart';
 import 'package:fuodz/widgets/list_items/service_option.list_item.dart';
@@ -413,15 +414,34 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
             ),
           ],
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.verified_user_outlined, color: Colors.green),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'A verified provider will be assigned after you request this service.'
-                    .tr(),
-                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+            Row(
+              children: [
+                const Icon(Icons.verified_user_outlined, color: Colors.green),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'A verified provider will be assigned after you request this service.'
+                        .tr(),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => vm.viewContext.push(
+                  (context) => AssistServiceProvidersPage(
+                    serviceId: widget.service.id,
+                    serviceName: widget.service.name,
+                  ),
+                ),
+                icon: const Icon(Icons.groups_outlined, size: 18),
+                label: Text("View providers who offer this".tr()),
               ),
             ),
           ],

@@ -41,6 +41,8 @@ class Api {
   static const categories = "/categories";
   static const products = "/products";
   static const services = "/services";
+  // Assist multi-service — providers (approved + active) offering a canonical service
+  static const assistServiceProviders = "/assist/services"; // /{id}/providers
   static const bestProducts = "/products?type=best";
   static const forYouProducts = "/products?type=you";
   static const vendorTypes = "/vendor/types";

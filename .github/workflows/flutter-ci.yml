@@ -2,7 +2,7 @@ name: Flutter CI (analyze & test)
 
 on:
   push:
-    branches: [ "feature/assist-provider-mobility" ]
+    branches: [ "feature/assist-provider-mobility", "feature/assist-multiservice" ]
   pull_request:
 
 jobs:
