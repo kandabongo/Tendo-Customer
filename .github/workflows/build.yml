@@ -2,7 +2,7 @@ name: Build Release APK
 on:
   workflow_dispatch:
   push:
-    branches: [main, "fix/assist-catalogue-null-vendor", "feature/assist-multiservice"]
+    branches: [main, "feature/customer-unified"]
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -10,6 +10,11 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+      - name: Resolve built commit SHA
+        id: meta
+        # The actual commit checked out — used so the release tag points to
+        # exactly what was built, not the repo's default branch.
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -28,23 +33,27 @@ jobs:
         run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
       - name: Install dependencies
         run: flutter pub get
+      - name: Run Shared Rides Dart tests
+        run: flutter test
       - name: Build release APK
         run: flutter build apk --release
       - name: Build release App Bundle
         run: flutter build appbundle --release
+      - name: Show signing fingerprint of the AAB
+        run: keytool -printcert -jarfile build/app/outputs/bundle/release/app-release.aab | grep -E "SHA1|SHA256|Owner" | tee -a $GITHUB_STEP_SUMMARY
       - name: Publish signed APK as a Release (one-tap phone install)
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: assist-fix-${{ github.run_number }}
-          name: Assist catalogue fix (build ${{ github.run_number }})
+          tag_name: customer-unified-${{ github.run_number }}
+          name: Customer UNIFIED - Taxi + Parcel + Shared Rides + Assist (build ${{ github.run_number }})
+          # Point the tag at the exact commit that was built (see Resolve step),
+          # instead of letting the action default to the repo's default branch.
+          target_commitish: ${{ steps.meta.outputs.sha }}
           body: |
-            Signed release build with the Assist canonical-catalogue fix
-            (vendor-less services now parse and display).
-
-            Install this APK over your current app - it is signed with the
-            same release key, so there is no need to uninstall and your login
-            is kept. After installing, open Assist: Browse Categories,
-            Trending This Week and Popular Services will now list services.
+            Unified Tendo Customer app: Taxi, Parcel, Shared Rides (Private/Shared
+            selector, fares, pooled-consent tracking) and Assist multi-service, plus
+            the address-search / GPS crash fixes and null-safe googleMapApiKey.
+            Install over the current app - same signing key, no uninstall, keeps login.
           files: |
             build/app/outputs/flutter-apk/app-release.apk
             build/app/outputs/bundle/release/app-release.aab

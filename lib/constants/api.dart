@@ -93,6 +93,13 @@ class Api {
   static const taxiTripLocationHistory = "/taxi/location/history";
   static const taxiOrderSummary = "/taxi/order/summary";
 
+  //Shared Rides (feature-gated server-side; disabled by default)
+  static const sharedRideQuote = "/taxi/shared/quote";
+  static const sharedRideBook = "/taxi/shared/book";
+  static const sharedRideTrip = "/taxi/shared/trip"; // /{id}/status
+  // append /{passengerId}/cancel
+  static const sharedRidePassenger = "/taxi/shared/passenger";
+
   //wallet
   static const walletBalance = "/wallet/balance";
   static const walletTopUp = "/wallet/topup";
